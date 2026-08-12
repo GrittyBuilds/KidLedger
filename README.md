@@ -1,16 +1,27 @@
 # 🧾 KidLedger
 
-A simple, self-hosted expense tracker for co-parents who split their children's
-expenses **50/50**. Log every expense, record settlement payments, watch the
-running balance, and generate a **printable monthly billing statement** for
-whichever parent owes the other at month's end.
+A single-user, **browser-only** expense tracker for co-parents who split their
+children's expenses **50/50**. One person keeps the ledger: log every expense,
+record settlement payments, watch the running balance, and generate a
+**printable monthly billing statement** for whichever parent owes the other.
+
+No server, no database, no accounts. Everything runs in a single HTML file and
+saves to your browser's `localStorage`.
+
+## Use it
+
+Just open **`index.html`** in any modern browser (double-click it, or drag it
+into a browser tab). That's it — nothing to install or run.
+
+> Keep `finance.js` in the same folder as `index.html`; the page loads it for
+> the money math.
 
 ## Features
 
 - **Track shared expenses** — date, description, category, amount, which parent
   paid, and (optionally) which child it was for. Every expense is split evenly.
-- **Running balance** — always know who owes whom and how much, factoring in all
-  expenses and past settlement payments.
+- **Running balance** — always know who owes whom, factoring in all expenses and
+  past settlement payments.
 - **Settlement payments** — record when one parent pays the other to square up.
   Overpayments correctly flip the balance the other way.
 - **Monthly billing statement** — pick a month and generate an itemized
@@ -19,6 +30,8 @@ whichever parent owes the other at month's end.
   from the browser.
 - **Outstanding balances carried forward** — statements always reconcile against
   the balance brought forward from prior months.
+- **Backup & restore** — export your whole ledger to a `.json` file and import it
+  later (or on another device). Import merges IDs safely so nothing collides.
 - **Configurable** — set both parents' real names and add your children.
 
 ## How the math works
@@ -34,64 +47,35 @@ Parent A**.
   month, applies that month's expenses and payments, and reports the **closing
   balance**.
 
-## Getting started
+## Where your data lives
 
-Requires Node.js 18+ (developed on Node 22).
+All data is stored in your browser's `localStorage` under the key
+`kidledger.v1` — it never leaves your device. That means:
 
-```bash
-npm install
-npm start
-```
+- **It's private** — nothing is uploaded anywhere.
+- **It's per-browser** — data saved in Chrome won't show up in Safari, and
+  clearing your browsing data can erase it.
 
-Then open <http://localhost:3000>.
+Because of that, **export a backup regularly** (Settings → Export backup). To
+move your ledger to another computer or browser, export on one and import on the
+other.
 
-To use a different port or database location:
+## Project layout
 
-```bash
-PORT=8080 KIDLEDGER_DB=/path/to/kidledger.db npm start
-```
+| File                   | Purpose                                                     |
+| ---------------------- | ----------------------------------------------------------- |
+| `index.html`           | The entire app — UI, styles, and logic (uses localStorage)  |
+| `finance.js`           | Pure balance & statement math, shared with the tests        |
+| `test/finance.test.js` | Unit tests for the finance logic (run with Node)            |
 
 ## Running the tests
 
-The money math lives in `finance.js` and is covered by unit tests:
+The money math lives in `finance.js` and is covered by unit tests using Node's
+built-in test runner (no dependencies to install):
 
 ```bash
 npm test
 ```
-
-## Project layout
-
-| File / dir              | Purpose                                                        |
-| ----------------------- | -------------------------------------------------------------- |
-| `server.js`             | Express server and REST API                                    |
-| `db.js`                 | SQLite schema and connection (better-sqlite3)                  |
-| `finance.js`            | Pure balance & statement math (unit-tested)                    |
-| `public/`               | Frontend single-page app (HTML, CSS, vanilla JS)               |
-| `test/finance.test.js`  | Unit tests for the finance logic                               |
-| `data/kidledger.db`     | SQLite database file (created on first run, git-ignored)       |
-
-## API reference
-
-| Method & path                | Description                                  |
-| ---------------------------- | -------------------------------------------- |
-| `GET /api/settings`          | Get parent names                             |
-| `PUT /api/settings`          | Update parent names                          |
-| `GET/POST /api/children`     | List / add children                          |
-| `DELETE /api/children/:id`   | Remove a child                               |
-| `GET/POST /api/expenses`     | List / add expenses                          |
-| `PUT/DELETE /api/expenses/:id` | Edit / delete an expense                   |
-| `GET/POST /api/payments`     | List / record settlement payments            |
-| `DELETE /api/payments/:id`   | Delete a payment                             |
-| `GET /api/balance`           | Current net balance and summary              |
-| `GET /api/statement?month=YYYY-MM` | Monthly billing statement              |
-| `GET /api/months`            | Months that have activity                    |
-
-## Notes
-
-Data is stored locally in a SQLite file under `data/`. Because two co-parents
-typically use different devices, run KidLedger on a shared host (a small VPS,
-home server, or similar) so both parents point at the same instance. Keep the
-`data/` directory backed up — it holds your full expense history.
 
 ## License
 

@@ -1,12 +1,8 @@
 {
   "name": "kidledger",
-  "version": "1.0.0",
-  "description": "Shared expense tracker for co-parents who split children's expenses 50/50, with monthly billing statements and running balances.",
-  "main": "server.js",
-  "type": "commonjs",
+  "version": "2.0.0",
+  "description": "Single-user, browser-only expense tracker for co-parents who split children's expenses 50/50. Stores data in the browser's localStorage; no server required.",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
     "test": "node --test"
   },
   "keywords": [
@@ -14,11 +10,8 @@
     "expenses",
     "shared-expenses",
     "billing",
-    "family"
+    "localstorage",
+    "offline"
   ],
-  "license": "MIT",
-  "dependencies": {
-    "better-sqlite3": "^11.8.1",
-    "express": "^4.21.2"
-  }
+  "license": "MIT"
 }
