@@ -1,0 +1,24 @@
+{
+  "name": "kidledger",
+  "version": "1.0.0",
+  "description": "Shared expense tracker for co-parents who split children's expenses 50/50, with monthly billing statements and running balances.",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test"
+  },
+  "keywords": [
+    "co-parenting",
+    "expenses",
+    "shared-expenses",
+    "billing",
+    "family"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "express": "^4.21.2"
+  }
+}
