@@ -12,23 +12,31 @@
  *
  * Each expense is divided into a responsibility share for each parent (they sum
  * to the total). Whoever paid fronted the whole amount, so the other parent owes
- * them THAT parent's share.
- *   - Expense paid by A:  B owes A  share_B  -> balance += share_B
- *   - Expense paid by B:  A owes B  share_A  -> balance -= share_A
+ * them THAT parent's share.  Split types: even | percent(A%) | amount($ to A) |
+ * full('A'|'B').  Disputed expenses contribute nothing until approved.
  *
- * Split types: even | percent(A%) | amount($ to A) | full('A'|'B').
- * Disputed expenses contribute nothing until approved.
+ * Billing model (accounts-receivable style):
+ *   - A STATEMENT covers one calendar month of expenses. It is issued on the 1st
+ *     of the following month and due on the 20th of the following month.
+ *   - Settlement PAYMENTS and manual ADJUSTMENTS/rollover are applied to a
+ *     specific statement period (statement_period = 'YYYY-MM'), or left unapplied.
+ *   - A statement's outstanding = its charges + payments/adjustments applied to it.
+ *     Status: paid (outstanding ~ 0), overdue (past the due date), else open.
  *
  * Settlement payment: from B to A -> balance -= amount; from A to B -> += amount.
- * Adjustment / rollover: a manual entry crediting one parent.
- *   - favor 'A' (owed to A) -> balance += amount
- *   - favor 'B' (owed to B) -> balance -= amount
+ * Adjustment: favor 'A' (owed to A) -> += amount; favor 'B' -> -= amount.
  */
 (function (global) {
   'use strict';
 
+  var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  var ISSUE_DAY = '01';
+  var DUE_DAY = '20';
+
   function round2(n) { return Math.round(((Number(n) || 0) + Number.EPSILON) * 100) / 100; }
   function clamp(n, lo, hi) { return Math.min(Math.max(n, lo), hi); }
+  function monthName(ym) { var y = +ym.slice(0, 4), m = +ym.slice(5, 7); return MONTHS[m - 1] + ' ' + y; }
+  function nextMonth(ym) { var y = +ym.slice(0, 4), m = +ym.slice(5, 7) + 1; if (m > 12) { m = 1; y++; } return y + '-' + (m < 10 ? '0' : '') + m; }
 
   function shares(expense) {
     var amt = Number(expense.amount) || 0;
@@ -126,24 +134,89 @@
     }).sort(function (a, b) { return b.total - a.total; });
   }
 
-  function buildStatement(month, expenses, payments, names, adjustments) {
+  // ----- Billing statements (AR model) ------------------------------------
+  /** Issue (1st of next month) and due (20th of next month) dates for a period. */
+  function statementDates(period) {
+    var nm = nextMonth(period);
+    return { issue: nm + '-' + ISSUE_DAY, due: nm + '-' + DUE_DAY };
+  }
+  function statementStatus(remaining, due, today) {
+    if (Math.abs(remaining) < 0.005) return 'paid';
+    if (today && today > due) return 'overdue';
+    return 'open';
+  }
+  /** Net charge (signed, B-owes-A positive) for a month's approved expenses. */
+  function periodCharge(expenses, month) {
+    var c = 0;
+    for (var i = 0; i < expenses.length; i++) {
+      var e = expenses[i];
+      if (e.status !== 'disputed' && typeof e.date === 'string' && e.date.slice(0, 7) === month) c += expenseDelta(e);
+    }
+    return round2(c);
+  }
+  /** Net delta of payments + adjustments APPLIED (allocated) to a statement. */
+  function appliedTo(payments, adjustments, month) {
+    var d = 0, i;
+    for (i = 0; i < payments.length; i++) if (payments[i].statement_period === month) d += paymentDelta(payments[i]);
+    if (adjustments) for (i = 0; i < adjustments.length; i++) if (adjustments[i].statement_period === month) d += adjustmentDelta(adjustments[i]);
+    return round2(d);
+  }
+
+  /**
+   * The full billing ledger: one row per statement period, plus any unapplied
+   * payments/credits and the overall outstanding. `today` (YYYY-MM-DD) decides
+   * overdue status.
+   */
+  function statementLedger(expenses, payments, adjustments, names, today) {
+    adjustments = adjustments || [];
+    var periods = {}, i;
+    for (i = 0; i < expenses.length; i++) { var e = expenses[i]; if (e.status !== 'disputed' && typeof e.date === 'string') periods[e.date.slice(0, 7)] = true; }
+    for (i = 0; i < payments.length; i++) if (payments[i].statement_period) periods[payments[i].statement_period] = true;
+    for (i = 0; i < adjustments.length; i++) if (adjustments[i].statement_period) periods[adjustments[i].statement_period] = true;
+
+    var statements = Object.keys(periods).sort().reverse().map(function (p) {
+      var charge = periodCharge(expenses, p);
+      var applied = appliedTo(payments, adjustments, p);
+      var remaining = round2(charge + applied);
+      var d = statementDates(p);
+      return {
+        period: p, label: monthName(p), issue: d.issue, due: d.due,
+        charge: charge, charge_summary: describeBalance(charge, names),
+        applied: applied, paid_amount: round2(Math.abs(applied)),
+        remaining: remaining, remaining_summary: describeBalance(remaining, names),
+        status: statementStatus(remaining, d.due, today),
+      };
+    });
+    var unapplied = 0;
+    for (i = 0; i < payments.length; i++) if (!payments[i].statement_period) unapplied += paymentDelta(payments[i]);
+    for (i = 0; i < adjustments.length; i++) if (!adjustments[i].statement_period) unapplied += adjustmentDelta(adjustments[i]);
+    unapplied = round2(unapplied);
+    var totalOutstanding = round2(statements.reduce(function (t, s) { return t + s.remaining; }, 0) + unapplied);
+    return {
+      statements: statements,
+      unapplied: unapplied,
+      open_count: statements.filter(function (s) { return s.status === 'open'; }).length,
+      overdue_count: statements.filter(function (s) { return s.status === 'overdue'; }).length,
+      total_outstanding: totalOutstanding,
+      total_summary: describeBalance(totalOutstanding, names),
+    };
+  }
+
+  /**
+   * A single printable statement (invoice) for `month`: that month's charges,
+   * the payments/adjustments applied to it, the amount due, and issue/due dates.
+   */
+  function buildStatement(month, expenses, payments, names, adjustments, today) {
     adjustments = adjustments || [];
     var inMonth = function (d) { return typeof d === 'string' && d.slice(0, 7) === month; };
-    var before = function (d) { return typeof d === 'string' && d.slice(0, 7) < month; };
-
-    var openingBalance = computeBalance(
-      expenses.filter(function (e) { return before(e.date); }),
-      payments.filter(function (p) { return before(p.date); }),
-      adjustments.filter(function (a) { return before(a.date); })
-    );
 
     var monthAll = expenses.filter(function (e) { return inMonth(e.date); })
       .sort(function (a, b) { return a.date.localeCompare(b.date) || a.id - b.id; });
     var monthExpenses = monthAll.filter(function (e) { return e.status !== 'disputed'; });
     var disputed = monthAll.filter(function (e) { return e.status === 'disputed'; });
-    var monthPayments = payments.filter(function (p) { return inMonth(p.date); })
+    var appliedPayments = payments.filter(function (p) { return p.statement_period === month; })
       .sort(function (a, b) { return a.date.localeCompare(b.date) || a.id - b.id; });
-    var monthAdjustments = adjustments.filter(function (a) { return inMonth(a.date); })
+    var appliedAdjustments = adjustments.filter(function (a) { return a.statement_period === month; })
       .sort(function (a, b) { return a.date.localeCompare(b.date) || a.id - b.id; });
 
     var paidByA = 0, paidByB = 0, respA = 0, respB = 0;
@@ -165,9 +238,16 @@
       };
     };
 
+    var charge = round2(monthExpenses.reduce(function (t, x) { return t + expenseDelta(x); }, 0));
+    var netPayments = round2(appliedPayments.reduce(function (t, x) { return t + paymentDelta(x); }, 0));
+    var netAdjustments = round2(appliedAdjustments.reduce(function (t, x) { return t + adjustmentDelta(x); }, 0));
+    var amountDue = round2(charge + netPayments + netAdjustments);
+    var d = statementDates(month);
+
     return {
       month: month, names: names,
-      opening: { balance: openingBalance, summary: describeBalance(openingBalance, names) },
+      issue: d.issue, due: d.due,
+      status: statementStatus(amountDue, d.due, today),
       totals: {
         total_spent: round2(paidByA + paidByB),
         paid_by_a: round2(paidByA), paid_by_b: round2(paidByB),
@@ -178,40 +258,27 @@
       },
       line_items: monthExpenses.map(toLine),
       disputed_items: disputed.map(toLine),
-      payments: monthPayments.map(function (p) {
-        return {
-          id: p.id, date: p.date, from_name: p.from_parent === 'A' ? names.A : names.B,
-          to_name: p.to_parent === 'A' ? names.A : names.B, amount: round2(p.amount),
-          method: p.method || null, child: p.child_name || 'Shared', notes: p.notes || null,
-        };
+      payments: appliedPayments.map(function (p) {
+        return { id: p.id, date: p.date, from_name: p.from_parent === 'A' ? names.A : names.B, to_name: p.to_parent === 'A' ? names.A : names.B, amount: round2(p.amount), method: p.method || null, notes: p.notes || null };
       }),
-      adjustments: monthAdjustments.map(function (a) {
-        return {
-          id: a.id, date: a.date, label: a.label || 'Adjustment', amount: round2(a.amount),
-          favor: a.favor, favor_name: a.favor === 'A' ? names.A : names.B,
-          child: a.child_name || 'Shared', notes: a.notes || null,
-        };
+      adjustments: appliedAdjustments.map(function (a) {
+        return { id: a.id, date: a.date, label: a.label || 'Adjustment', amount: round2(a.amount), favor: a.favor, favor_name: a.favor === 'A' ? names.A : names.B, notes: a.notes || null };
       }),
       by_child: summarizeByChild(monthExpenses, names),
       by_category: summarizeByCategory(monthExpenses),
-      net_from_expenses: round2(monthExpenses.reduce(function (t, x) { return t + expenseDelta(x); }, 0)),
-      net_from_payments: round2(monthPayments.reduce(function (t, x) { return t + paymentDelta(x); }, 0)),
-      net_from_adjustments: round2(monthAdjustments.reduce(function (t, x) { return t + adjustmentDelta(x); }, 0)),
-      closing: (function () {
-        var c = round2(openingBalance +
-          monthExpenses.reduce(function (t, x) { return t + expenseDelta(x); }, 0) +
-          monthPayments.reduce(function (t, x) { return t + paymentDelta(x); }, 0) +
-          monthAdjustments.reduce(function (t, x) { return t + adjustmentDelta(x); }, 0));
-        return { balance: c, summary: describeBalance(c, names) };
-      })(),
+      charge: charge, charge_summary: describeBalance(charge, names),
+      net_from_payments: netPayments, net_from_adjustments: netAdjustments,
+      amount_due: amountDue, due_summary: describeBalance(amountDue, names),
     };
   }
 
   var Finance = {
-    round2: round2, clamp: clamp, shares: shares, splitLabel: splitLabel,
+    round2: round2, clamp: clamp, monthName: monthName, nextMonth: nextMonth,
+    shares: shares, splitLabel: splitLabel,
     expenseDelta: expenseDelta, paymentDelta: paymentDelta, adjustmentDelta: adjustmentDelta,
     computeBalance: computeBalance, describeBalance: describeBalance,
     summarizeByChild: summarizeByChild, summarizeByCategory: summarizeByCategory,
+    statementDates: statementDates, statementStatus: statementStatus, statementLedger: statementLedger,
     buildStatement: buildStatement,
   };
 

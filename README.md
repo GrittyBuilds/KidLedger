@@ -78,9 +78,14 @@ browser). The same Client ID and Google account are used on every device.
   **percentage**, by a fixed **dollar amount**, or **100% to one parent**. Quick-add
   uses 50/50; the full editor exposes every option with a live preview.
 - **Editable categories** — add or remove expense categories in Settings.
-- **Payments & rollover** — record settlement payments (allocatable to a child or
-  shared), plus manual **adjustments / rollover** entries for opening balances,
-  agreed credits, or corrections that move the running balance.
+- **Monthly billing cycle** — each month's expenses become a **statement**,
+  issued on the **1st** of the next month and **due on the 20th**. A billing
+  overview lists every statement with its charges, payments, outstanding, due
+  date, and status (**Open / Overdue / Paid**).
+- **Payments & rollover applied to statements** — record settlement payments and
+  manual **adjustments / rollover** (opening balances, agreed credits,
+  corrections) and **apply each to a specific open statement** (or leave it
+  unapplied). This drives the Open/Paid/Overdue status per statement.
 - **Receipt attachments** — attach a photo or PDF to any expense as proof. Images
   are automatically downscaled to keep storage small; view receipts in-app.
 - **Dispute / approve status** — flag a contested charge as *disputed* and it's

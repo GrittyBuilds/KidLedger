@@ -335,7 +335,7 @@
         <button class="nav-item" data-view="payments"><span>Payments</span></button>
         <button class="nav-item" data-view="recurring"><span>Recurring</span></button>
         <button class="nav-item" data-view="reports"><span>Reports</span></button>
-        <button class="nav-item" data-view="statement"><span>Statement</span></button>
+        <button class="nav-item" data-view="statement"><span>Statements</span></button>
         <button class="nav-item" data-view="settings"><span>Settings</span></button>
       </nav>
       <div class="sidebar-foot">
@@ -386,6 +386,10 @@
               <div id="monthGlance" class="glance"></div>
             </div>
           </div>
+          <div class="card" id="billingCard" hidden>
+            <div class="card-head"><h2>Billing</h2><a class="link" data-view="statement" role="button">View statements</a></div>
+            <div id="billingSummary"></div>
+          </div>
           <div class="card">
             <div class="card-head"><h2>Recent activity</h2><a class="link" data-view="expenses" role="button">View all</a></div>
             <div id="recentList" class="list"></div>
@@ -431,7 +435,7 @@
                   <label>To<select name="to_parent" id="payTo"></select></label>
                 </div>
                 <div class="row">
-                  <label>Allocate to<select name="child_id" id="payChild"></select></label>
+                  <label>Apply to statement<select name="statement_period" id="payStatement"></select></label>
                   <label>Method<input type="text" name="method" placeholder="Venmo, check…" /></label>
                 </div>
                 <label>Notes<input type="text" name="notes" placeholder="Optional" /></label>
@@ -449,7 +453,7 @@
                 <label>Description<input type="text" name="label" placeholder="e.g. Opening balance" required /></label>
                 <div class="row">
                   <label>Owed to<select name="favor" id="adjFavor"></select></label>
-                  <label>Allocate to<select name="child_id" id="adjChild"></select></label>
+                  <label>Apply to statement<select name="statement_period" id="adjStatement"></select></label>
                 </div>
                 <label>Notes<input type="text" name="notes" placeholder="Optional" /></label>
                 <button type="submit" class="btn primary">Add adjustment</button>
@@ -534,16 +538,26 @@
           </div>
         </section>
 
-        <!-- Statement -->
+        <!-- Statements -->
         <section class="view" id="view-statement">
           <div class="page-head no-print">
-            <div><h2>Billing statement</h2><div class="sub">A professional monthly statement, ready to print or save as PDF.</div></div>
-            <div class="row" style="flex:0 0 auto;gap:8px;flex-wrap:wrap;">
-              <input type="month" id="statementMonth" style="width:auto;" />
-              <button class="btn primary sm" id="loadStatementBtn">Generate</button>
-              <button class="btn ghost sm" id="lockStatementBtn">Finalize</button>
-              <button class="btn ghost sm" id="printStatementBtn">Print / PDF</button>
+            <div><h2>Statements</h2><div class="sub">Each month is billed on the 1st and due on the 20th of the next month.</div></div>
+          </div>
+          <div class="card no-print">
+            <div class="card-head"><h2>Billing overview</h2></div>
+            <div id="statementLedger" class="table-wrap"></div>
+          </div>
+          <div class="card no-print">
+            <div class="card-head">
+              <h2>Statement document</h2>
+              <div class="row" style="flex:0 0 auto;gap:8px;flex-wrap:wrap;">
+                <input type="month" id="statementMonth" style="width:auto;" />
+                <button class="btn primary sm" id="loadStatementBtn">Generate</button>
+                <button class="btn ghost sm" id="lockStatementBtn">Finalize</button>
+                <button class="btn ghost sm" id="printStatementBtn">Print / PDF</button>
+              </div>
             </div>
+            <p class="muted">Pick a month (or click a row above) to view its printable invoice.</p>
           </div>
           <div id="statementOutput"></div>
         </section>
@@ -631,7 +645,7 @@
   <nav class="bottom-nav" id="bottomNav">
     <button class="bnav active" data-view="dashboard"><span class="bic" data-ic="dashboard"></span>Home</button>
     <button class="bnav" data-view="expenses"><span class="bic" data-ic="expenses"></span>Expenses</button>
-    <button class="bnav" data-view="statement"><span class="bic" data-ic="statement"></span>Statement</button>
+    <button class="bnav" data-view="statement"><span class="bic" data-ic="statement"></span>Statements</button>
     <button class="bnav" data-view="reports"><span class="bic" data-ic="reports"></span>Reports</button>
     <button class="bnav" id="moreBtn"><span class="bic" data-ic="more"></span>More</button>
   </nav>
@@ -727,7 +741,7 @@
     // ===================================================================
     const STORAGE_KEY = 'kidledger.v1';
     const DEFAULT_CATEGORIES = ['Medical', 'Childcare', 'Education', 'Activities', 'Clothing', 'Food', 'Travel', 'Other'];
-    const VIEW_TITLES = { dashboard: 'Dashboard', expenses: 'Expenses', payments: 'Payments', recurring: 'Recurring', reports: 'Reports', statement: 'Statement', settings: 'Settings' };
+    const VIEW_TITLES = { dashboard: 'Dashboard', expenses: 'Expenses', payments: 'Payments', recurring: 'Recurring', reports: 'Reports', statement: 'Statements', settings: 'Settings' };
 
     function blankState() {
       return { seq: 0, updatedAt: 0, parents: { A: 'Parent A', B: 'Parent B' }, categories: DEFAULT_CATEGORIES.slice(), children: [], expenses: [], payments: [], adjustments: [], locked_months: [], recurring: [] };
@@ -740,12 +754,14 @@
       if (n.child_id === null || n.child_id === undefined || n.child_id === '') n.child_id = 'shared';
       return n;
     }
-    function normalizePayment(p) { return Object.assign({ child_id: 'shared', method: null, notes: null }, p); }
+    function normalizePayment(p) { return Object.assign({ statement_period: '', method: null, notes: null }, p); }
+    function normalizeAdjustment(a) { return Object.assign({ statement_period: '', notes: null }, a); }
     function migrate(s) {
       if (!Array.isArray(s.categories) || !s.categories.length) s.categories = DEFAULT_CATEGORIES.slice();
       if (!Array.isArray(s.adjustments)) s.adjustments = [];
       s.expenses = (s.expenses || []).map(normalizeExpense);
       s.payments = (s.payments || []).map(normalizePayment);
+      s.adjustments = s.adjustments.map(normalizeAdjustment);
       return s;
     }
     function load() {
@@ -805,15 +821,34 @@
     }
     function readAssign(v) { return v === 'shared' ? 'shared' : Number(v); }
 
+    // ---- Statement-period allocation selects ----
+    const STATUS_WORD = { open: 'Open', overdue: 'Overdue', paid: 'Paid' };
+    function currentLedger() { return Finance.statementLedger(enrichedExpenses(), state.payments, state.adjustments, state.parents, todayISO()); }
+    function defaultStatementPeriod(led) {
+      const unpaid = led.statements.filter((s) => s.status !== 'paid');
+      if (unpaid.length) return unpaid[unpaid.length - 1].period; // oldest unpaid
+      return '';
+    }
+    function statementOptions(sel, led) {
+      const order = { overdue: 0, open: 1, paid: 2 };
+      const sorted = [...led.statements].sort((a, b) => (order[a.status] - order[b.status]) || b.period.localeCompare(a.period));
+      const opts = sorted.map((s) => '<option value="' + s.period + '"' + (s.period === sel ? ' selected' : '') + '>' + esc(Finance.monthName(s.period)) + ' — ' + STATUS_WORD[s.status] + '</option>').join('');
+      return opts + '<option value=""' + (!sel ? ' selected' : '') + '>Unapplied (general)</option>';
+    }
+    function refreshStatementSelects() {
+      const led = currentLedger();
+      const def = defaultStatementPeriod(led);
+      $('#payStatement').innerHTML = statementOptions(def, led);
+      $('#adjStatement').innerHTML = statementOptions(def, led);
+    }
+
     function refreshSelects() {
       $('#paidByQuick').innerHTML = parentOptions('A');
       $('#catQuick').innerHTML = categoryOptions(state.categories[0]);
       $('#childQuick').innerHTML = assignOptions('shared');
       $('#payFrom').innerHTML = parentOptions('B');
       $('#payTo').innerHTML = parentOptions('A');
-      $('#payChild').innerHTML = assignOptions('shared');
       $('#adjFavor').innerHTML = parentOptions('A');
-      $('#adjChild').innerHTML = assignOptions('shared');
       $('#catRec').innerHTML = categoryOptions('Childcare');
       $('#childRec').innerHTML = assignOptions('shared');
       $('#paidByRec').innerHTML = parentOptions('A');
@@ -856,7 +891,7 @@
       $('#mobileTitle').textContent = VIEW_TITLES[name] || 'KidLedger';
       $('#moreSheet').hidden = true;
       $('#content').scrollTop = 0; window.scrollTo(0, 0);
-      if (name === 'statement' && !$('#statementOutput').dataset.loaded) { $('#statementMonth').value = $('#statementMonth').value || thisMonth(); loadStatement(); }
+      if (name === 'statement' && !$('#statementOutput').dataset.loaded) { $('#statementMonth').value = $('#statementMonth').value || prevMonthStr(thisMonth()); loadStatement(); }
       if (name === 'reports') renderReports();
     }
     document.addEventListener('click', (e) => {
@@ -894,6 +929,20 @@
         glance('Total spent', money(total)) +
         glance(esc(state.parents.A) + ' paid', money(byA)) +
         glance(esc(state.parents.B) + ' paid', money(byB));
+
+      // Billing summary
+      const led = currentLedger();
+      const bc = $('#billingCard');
+      if (!led.statements.length) { bc.hidden = true; }
+      else {
+        bc.hidden = false;
+        const nextDue = led.statements.filter((x) => x.status !== 'paid').sort((a, b) => a.due.localeCompare(b.due))[0];
+        $('#billingSummary').innerHTML =
+          glance('Total outstanding', led.total_summary.settled ? 'Settled' : money(led.total_summary.amount)) +
+          glance('Open statements', String(led.open_count)) +
+          glance('Overdue', led.overdue_count ? '<span style="color:var(--red)">' + led.overdue_count + '</span>' : '0') +
+          (nextDue ? glance('Next due', fmtDate(nextDue.due) + ' · ' + esc(nextDue.label)) : '');
+      }
 
       const items = [
         ...state.expenses.map((e) => ({ k: 'e', date: e.date, id: e.id, d: e })),
@@ -994,6 +1043,7 @@
     // ===================================================================
     // Payments & adjustments
     // ===================================================================
+    function appliedLabel(period) { return period ? 'applied to ' + Finance.monthName(period) + ' statement' : 'unapplied'; }
     function renderLedger() {
       const items = [
         ...state.payments.map((p) => ({ k: 'p', date: p.date, id: p.id, d: p })),
@@ -1002,8 +1052,8 @@
       const el = $('#ledgerList');
       if (!items.length) { el.innerHTML = '<div class="empty">No payments or adjustments yet.</div>'; return; }
       el.innerHTML = items.map((it) => {
-        if (it.k === 'p') { const p = it.d; return '<div class="li"><div class="avatar pay">↔</div><div class="main"><div class="t">Payment · ' + esc(parentName(p.from_parent)) + ' → ' + esc(parentName(p.to_parent)) + (isLocked(p.date) ? ' 🔒' : '') + '</div><div class="s">' + fmtDate(p.date) + ' · for ' + esc(childName(p.child_id)) + (p.method ? ' · ' + esc(p.method) : '') + (p.notes ? ' · ' + esc(p.notes) : '') + '</div></div><div class="amt">' + money(p.amount) + '</div><button class="mini danger" data-del-payment="' + p.id + '">Del</button></div>'; }
-        const a = it.d; return '<div class="li"><div class="avatar adj">±</div><div class="main"><div class="t">' + esc(a.label || 'Adjustment') + (isLocked(a.date) ? ' 🔒' : '') + '</div><div class="s">' + fmtDate(a.date) + ' · owed to ' + esc(parentName(a.favor)) + ' · for ' + esc(childName(a.child_id)) + (a.notes ? ' · ' + esc(a.notes) : '') + '</div></div><div class="amt">' + money(a.amount) + '</div><button class="mini danger" data-del-adjustment="' + a.id + '">Del</button></div>';
+        if (it.k === 'p') { const p = it.d; return '<div class="li"><div class="avatar pay">↔</div><div class="main"><div class="t">Payment · ' + esc(parentName(p.from_parent)) + ' → ' + esc(parentName(p.to_parent)) + (isLocked(p.date) ? ' 🔒' : '') + '</div><div class="s">' + fmtDate(p.date) + ' · ' + esc(appliedLabel(p.statement_period)) + (p.method ? ' · ' + esc(p.method) : '') + (p.notes ? ' · ' + esc(p.notes) : '') + '</div></div><div class="amt">' + money(p.amount) + '</div><button class="mini danger" data-del-payment="' + p.id + '">Del</button></div>'; }
+        const a = it.d; return '<div class="li"><div class="avatar adj">±</div><div class="main"><div class="t">' + esc(a.label || 'Adjustment') + (isLocked(a.date) ? ' 🔒' : '') + '</div><div class="s">' + fmtDate(a.date) + ' · owed to ' + esc(parentName(a.favor)) + ' · ' + esc(appliedLabel(a.statement_period)) + (a.notes ? ' · ' + esc(a.notes) : '') + '</div></div><div class="amt">' + money(a.amount) + '</div><button class="mini danger" data-del-adjustment="' + a.id + '">Del</button></div>';
       }).join('');
     }
 
@@ -1132,10 +1182,22 @@
     // ===================================================================
     // Statement (invoice)
     // ===================================================================
+    function statusChip(st) { const cls = { open: '', overdue: ' warn', paid: ' pay' }[st] || ''; return '<span class="pill' + cls + '">' + STATUS_WORD[st] + '</span>'; }
+    function renderStatementLedger() {
+      const led = currentLedger();
+      const el = $('#statementLedger');
+      if (!led.statements.length) { el.innerHTML = '<div class="empty">No statements yet — add expenses to generate monthly statements.</div>'; return; }
+      el.innerHTML = '<table><thead><tr><th>Statement</th><th>Issued</th><th>Due</th><th class="num">Charges</th><th class="num">Paid</th><th class="num">Outstanding</th><th>Status</th></tr></thead><tbody>' +
+        led.statements.map((s) => '<tr data-period="' + s.period + '" style="cursor:pointer;"><td>' + esc(s.label) + '</td><td>' + fmtDate(s.issue) + '</td><td>' + fmtDate(s.due) + '</td><td class="num">' + money(Math.abs(s.charge)) + '</td><td class="num">' + money(s.paid_amount) + '</td><td class="num">' + money(Math.abs(s.remaining)) + '</td><td>' + statusChip(s.status) + '</td></tr>').join('') +
+        '</tbody></table>' +
+        '<div class="summary-bar" style="padding-top:14px;"><span>Open <b>' + led.open_count + '</b></span><span>Overdue <b style="color:var(--red)">' + led.overdue_count + '</b></span>' +
+        (led.unapplied !== 0 ? '<span>Unapplied credits <b>' + money(Math.abs(led.unapplied)) + '</b></span>' : '') +
+        '<span>Total outstanding <b>' + (led.total_summary.settled ? '$0.00' : money(led.total_summary.amount)) + '</b>' + (led.total_summary.settled ? '' : ' — ' + esc(led.total_summary.text)) + '</span></div>';
+    }
     function loadStatement() {
-      const month = $('#statementMonth').value || thisMonth();
+      const month = $('#statementMonth').value || prevMonthStr(thisMonth());
       $('#statementMonth').value = month;
-      const s = Finance.buildStatement(month, enrichedExpenses(), enrich(state.payments), state.parents, enrich(state.adjustments));
+      const s = Finance.buildStatement(month, enrichedExpenses(), state.payments, state.parents, state.adjustments, todayISO());
       $('#statementOutput').dataset.loaded = '1';
       $('#statementOutput').innerHTML = renderStatement(s);
       $('#lockStatementBtn').textContent = state.locked_months.includes(month) ? 'Unlock' : 'Finalize';
@@ -1148,36 +1210,36 @@
     }
     function signed(n) { return n === 0 ? money(0) : (n > 0 ? '+' : '−') + money(Math.abs(n)); }
     function renderStatement(s) {
-      const closing = s.closing.summary, opening = s.opening.summary, locked = state.locked_months.includes(s.month);
-      const items = s.line_items.length ? s.line_items.map((li) => '<tr><td>' + fmtDate(li.date) + '</td><td>' + esc(li.description) + '<div class="s" style="color:var(--muted);font-size:12px;">' + esc(li.child) + ' · ' + esc(li.category) + (li.has_receipt ? ' · 📎' : '') + '</div></td><td>' + esc(li.paid_by_name) + '</td><td>' + esc(li.split_label) + '</td><td class="num">' + money(li.amount) + '</td><td class="num">' + money(li.owed_amount) + '</td></tr>').join('') : '<tr><td colspan="6" class="empty">No expenses this month.</td></tr>';
-      const pay = (s.payments.length || s.adjustments.length) ? '<div class="stmt-sec">Payments &amp; adjustments</div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Detail</th><th>For</th><th class="num">Amount</th></tr></thead><tbody>' +
-        s.payments.map((p) => '<tr><td>' + fmtDate(p.date) + '</td><td>Payment · ' + esc(p.from_name) + ' → ' + esc(p.to_name) + (p.method ? ' (' + esc(p.method) + ')' : '') + '</td><td>' + esc(p.child) + '</td><td class="num">' + money(p.amount) + '</td></tr>').join('') +
-        s.adjustments.map((a) => '<tr><td>' + fmtDate(a.date) + '</td><td>' + esc(a.label) + ' · owed to ' + esc(a.favor_name) + '</td><td>' + esc(a.child) + '</td><td class="num">' + money(a.amount) + '</td></tr>').join('') + '</tbody></table></div>' : '';
+      const due = s.due_summary, locked = state.locked_months.includes(s.month);
+      const statusBadge = { open: '', overdue: '<span class="stmt-badge" style="background:var(--red-050);color:var(--red)">Overdue</span>', paid: '<span class="stmt-badge">Paid</span>' }[s.status] || '';
+      const items = s.line_items.length ? s.line_items.map((li) => '<tr><td>' + fmtDate(li.date) + '</td><td>' + esc(li.description) + '<div class="s" style="color:var(--muted);font-size:12px;">' + esc(li.child) + ' · ' + esc(li.category) + (li.has_receipt ? ' · 📎' : '') + '</div></td><td>' + esc(li.paid_by_name) + '</td><td>' + esc(li.split_label) + '</td><td class="num">' + money(li.amount) + '</td><td class="num">' + money(li.owed_amount) + '</td></tr>').join('') : '<tr><td colspan="6" class="empty">No expenses in this statement.</td></tr>';
+      const pay = (s.payments.length || s.adjustments.length) ? '<div class="stmt-sec">Payments &amp; credits applied</div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Detail</th><th class="num">Amount</th></tr></thead><tbody>' +
+        s.payments.map((p) => '<tr><td>' + fmtDate(p.date) + '</td><td>Payment · ' + esc(p.from_name) + ' → ' + esc(p.to_name) + (p.method ? ' (' + esc(p.method) + ')' : '') + '</td><td class="num">' + money(p.amount) + '</td></tr>').join('') +
+        s.adjustments.map((a) => '<tr><td>' + fmtDate(a.date) + '</td><td>' + esc(a.label) + ' · owed to ' + esc(a.favor_name) + '</td><td class="num">' + money(a.amount) + '</td></tr>').join('') + '</tbody></table></div>' : '';
       const disputed = s.disputed_items.length ? '<div class="stmt-note">⚠ ' + s.disputed_items.length + ' disputed item(s) totaling ' + money(s.totals.disputed_total) + ' are excluded until approved.</div>' : '';
       const byChild = s.by_child.length ? s.by_child.map((r) => '<div class="stmt-recon"><div class="l"><span>' + esc(r.name) + '</span><span>' + money(r.total) + '</span></div></div>').join('') : '<div class="muted">No expenses.</div>';
       const byCat = s.by_category.length ? s.by_category.map((r) => '<div class="stmt-recon"><div class="l"><span>' + esc(r.name) + '</span><span>' + money(r.total) + '</span></div></div>').join('') : '<div class="muted">No expenses.</div>';
 
       return '<div class="stmt">' +
         '<div class="stmt-top"><div class="stmt-mark"><div class="m">🧾</div><div><div class="n">KidLedger</div><div class="p">Shared expense statement</div></div></div>' +
-        '<div class="stmt-title"><div class="h">Statement</div><div class="period">' + monthLabel(s.month) + '</div><div class="date">Prepared ' + fmtDate(todayISO()) + '</div>' + (locked ? '<div class="stmt-badge">🔒 Finalized</div>' : '') + '</div></div>' +
-        '<div class="stmt-parties"><div><div class="k">Between</div><div class="v">' + esc(s.names.A) + '</div></div><div><div class="k">And</div><div class="v">' + esc(s.names.B) + '</div></div></div>' +
+        '<div class="stmt-title"><div class="h">Statement</div><div class="period">' + monthLabel(s.month) + '</div><div class="date">Issued ' + fmtDate(s.issue) + ' · Due ' + fmtDate(s.due) + '</div>' + (locked ? '<div class="stmt-badge">🔒 Finalized</div> ' : '') + statusBadge + '</div></div>' +
+        '<div class="stmt-parties"><div><div class="k">Between</div><div class="v">' + esc(s.names.A) + '</div></div><div><div class="k">And</div><div class="v">' + esc(s.names.B) + '</div></div><div><div class="k">Payment due by</div><div class="v">' + fmtDate(s.due) + '</div></div></div>' +
         '<div class="stmt-tiles">' +
-          '<div class="stmt-tile"><div class="k">Brought forward</div><div class="v">' + (opening.settled ? '—' : money(opening.amount)) + '</div></div>' +
-          '<div class="stmt-tile"><div class="k">Charges</div><div class="v">' + money(s.totals.total_spent) + '</div></div>' +
-          '<div class="stmt-tile"><div class="k">Payments</div><div class="v">' + money(Math.abs(s.net_from_payments)) + '</div></div>' +
-          '<div class="stmt-tile"><div class="k">Amount due</div><div class="v">' + (closing.settled ? '$0.00' : money(closing.amount)) + '</div></div>' +
+          '<div class="stmt-tile"><div class="k">Charges</div><div class="v">' + money(Math.abs(s.charge)) + '</div></div>' +
+          '<div class="stmt-tile"><div class="k">Payments applied</div><div class="v">' + money(Math.abs(s.net_from_payments)) + '</div></div>' +
+          '<div class="stmt-tile"><div class="k">Adjustments</div><div class="v">' + money(Math.abs(s.net_from_adjustments)) + '</div></div>' +
+          '<div class="stmt-tile"><div class="k">Amount due</div><div class="v">' + (due.settled ? '$0.00' : money(due.amount)) + '</div></div>' +
         '</div>' +
         '<div class="stmt-sec">Expenses</div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Description</th><th>Paid by</th><th>Split</th><th class="num">Amount</th><th class="num">Owed to payer</th></tr></thead><tbody>' + items + '</tbody></table></div>' +
         disputed + pay +
         '<div class="stmt-sec">Breakdown</div><div class="stmt-2col"><div><div class="k" style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">By child</div>' + byChild + '</div><div><div class="k" style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">By category</div>' + byCat + '</div></div>' +
         '<div class="stmt-sec">Reconciliation</div><div class="stmt-recon">' +
-          '<div class="l"><span>Balance brought forward</span><span>' + (opening.settled ? money(0) : (opening.debtor === 'B' ? '+' : '−') + money(opening.amount)) + '</span></div>' +
-          '<div class="l"><span>Expenses this month</span><span>' + signed(s.net_from_expenses) + '</span></div>' +
+          '<div class="l"><span>Charges this statement</span><span>' + signed(s.charge) + '</span></div>' +
           (s.net_from_payments !== 0 ? '<div class="l"><span>Payments applied</span><span>' + signed(s.net_from_payments) + '</span></div>' : '') +
-          (s.net_from_adjustments !== 0 ? '<div class="l"><span>Adjustments</span><span>' + signed(s.net_from_adjustments) + '</span></div>' : '') +
-          '<div class="l total"><span>Closing balance</span><span>' + (closing.settled ? money(0) : (closing.debtor === 'B' ? '+' : '−') + money(closing.amount)) + '</span></div></div>' +
-        '<div class="stmt-due ' + (closing.settled ? 'settled' : '') + '"><div><div class="dl">' + (closing.settled ? 'Settled' : 'Amount due') + '</div><div class="dw">' + (closing.settled ? 'No balance owing at month end.' : esc(closing.text)) + '</div></div><div class="dv">' + (closing.settled ? '✓' : money(closing.amount)) + '</div></div>' +
-        '<div class="stmt-foot">Positive figures increase what ' + esc(s.names.B) + ' owes ' + esc(s.names.A) + '. Generated by KidLedger on ' + fmtDate(todayISO()) + '.</div>' +
+          (s.net_from_adjustments !== 0 ? '<div class="l"><span>Adjustments applied</span><span>' + signed(s.net_from_adjustments) + '</span></div>' : '') +
+          '<div class="l total"><span>Amount due</span><span>' + (due.settled ? money(0) : (due.debtor === 'B' ? '+' : '−') + money(due.amount)) + '</span></div></div>' +
+        '<div class="stmt-due ' + (due.settled ? 'settled' : '') + '"><div><div class="dl">' + (due.settled ? 'Paid in full' : (s.status === 'overdue' ? 'Amount overdue' : 'Amount due by ' + fmtDate(s.due))) + '</div><div class="dw">' + (due.settled ? 'No balance owing on this statement.' : esc(due.text)) + '</div></div><div class="dv">' + (due.settled ? '✓' : money(due.amount)) + '</div></div>' +
+        '<div class="stmt-foot">Statement for ' + monthLabel(s.month) + ', issued ' + fmtDate(s.issue) + ', payment due by ' + fmtDate(s.due) + '. Generated by KidLedger on ' + fmtDate(todayISO()) + '.</div>' +
       '</div>';
     }
 
@@ -1248,7 +1310,7 @@
     // Render all
     // ===================================================================
     function renderAll() {
-      refreshSelects(); renderDashboard(); renderExpenses(); renderLedger(); renderRecurring(); renderReports(); renderSettings(); renderChildren(); renderCategories();
+      refreshSelects(); refreshStatementSelects(); renderDashboard(); renderExpenses(); renderLedger(); renderStatementLedger(); renderRecurring(); renderReports(); renderSettings(); renderChildren(); renderCategories();
       if ($('#statementOutput').dataset.loaded) loadStatement();
     }
 
@@ -1281,21 +1343,21 @@
 
     $('#paymentForm').addEventListener('submit', (e) => {
       e.preventDefault(); const f = e.target;
-      const v = { date: f.date.value.trim(), amount: Number(f.amount.value), from_parent: f.from_parent.value, to_parent: f.to_parent.value, child_id: readAssign(f.child_id.value), method: f.method.value.trim(), notes: f.notes.value.trim() };
+      const v = { date: f.date.value.trim(), amount: Number(f.amount.value), from_parent: f.from_parent.value, to_parent: f.to_parent.value, statement_period: f.statement_period.value, method: f.method.value.trim(), notes: f.notes.value.trim() };
       const err = []; if (!/^\d{4}-\d{2}-\d{2}$/.test(v.date)) err.push('a valid date'); if (!Number.isFinite(v.amount) || v.amount <= 0) err.push('a positive amount'); if (v.from_parent === v.to_parent) err.push('two different parents');
       if (err.length) return toast('Please enter ' + err.join(', '), true);
       if (isLocked(v.date)) return toast(monthLabel(v.date.slice(0, 7)) + ' is finalized — unlock it first', true);
-      state.payments.push(normalizePayment({ id: nextId(), date: v.date, from_parent: v.from_parent, to_parent: v.to_parent, amount: v.amount, child_id: v.child_id, method: v.method || null, notes: v.notes || null }));
-      save(); f.reset(); f.date.value = todayISO(); refreshSelects(); renderAll(); toast('Payment recorded');
+      state.payments.push(normalizePayment({ id: nextId(), date: v.date, from_parent: v.from_parent, to_parent: v.to_parent, amount: v.amount, statement_period: v.statement_period, method: v.method || null, notes: v.notes || null }));
+      save(); f.reset(); f.date.value = todayISO(); renderAll(); toast('Payment recorded');
     });
     $('#adjustmentForm').addEventListener('submit', (e) => {
       e.preventDefault(); const f = e.target;
-      const v = { date: f.date.value.trim(), amount: Number(f.amount.value), label: f.label.value.trim(), favor: f.favor.value, child_id: readAssign(f.child_id.value), notes: f.notes.value.trim() };
+      const v = { date: f.date.value.trim(), amount: Number(f.amount.value), label: f.label.value.trim(), favor: f.favor.value, statement_period: f.statement_period.value, notes: f.notes.value.trim() };
       const err = []; if (!/^\d{4}-\d{2}-\d{2}$/.test(v.date)) err.push('a valid date'); if (!Number.isFinite(v.amount) || v.amount <= 0) err.push('a positive amount'); if (!v.label) err.push('a description');
       if (err.length) return toast('Please enter ' + err.join(', '), true);
       if (isLocked(v.date)) return toast(monthLabel(v.date.slice(0, 7)) + ' is finalized — unlock it first', true);
-      state.adjustments.push({ id: nextId(), date: v.date, amount: v.amount, label: v.label, favor: v.favor, child_id: v.child_id, notes: v.notes || null });
-      save(); f.reset(); f.date.value = todayISO(); refreshSelects(); renderAll(); toast('Adjustment added');
+      state.adjustments.push(normalizeAdjustment({ id: nextId(), date: v.date, amount: v.amount, label: v.label, favor: v.favor, statement_period: v.statement_period, notes: v.notes || null }));
+      save(); f.reset(); f.date.value = todayISO(); renderAll(); toast('Adjustment added');
     });
     $('#ledgerList').addEventListener('click', (e) => {
       const dp = e.target.closest('[data-del-payment]'), da = e.target.closest('[data-del-adjustment]');
@@ -1331,6 +1393,7 @@
 
     $('#loadStatementBtn').addEventListener('click', loadStatement);
     $('#statementMonth').addEventListener('change', loadStatement);
+    $('#statementLedger').addEventListener('click', (e) => { const tr = e.target.closest('[data-period]'); if (!tr) return; $('#statementMonth').value = tr.dataset.period; loadStatement(); $('#statementOutput').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     $('#lockStatementBtn').addEventListener('click', toggleLock);
     $('#printStatementBtn').addEventListener('click', () => window.print());
 

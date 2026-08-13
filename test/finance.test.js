@@ -108,86 +108,118 @@ test('disputed expenses are excluded from the balance', () => {
 
 // --- Statement -------------------------------------------------------------
 
-test('monthly statement carries prior balance forward', () => {
+test('single-period statement shows that month charges and amount due', () => {
   const expenses = [
     { id: 1, date: '2026-01-10', amount: 100, paid_by: 'A', description: 'Jan', category: 'Other' },
     { id: 2, date: '2026-02-14', amount: 50, paid_by: 'B', description: 'Feb', category: 'Other' },
   ];
-  const stmt = finance.buildStatement('2026-02', expenses, [], names);
-  assert.equal(stmt.opening.balance, 50);
+  const stmt = finance.buildStatement('2026-02', expenses, [], names, []);
+  assert.equal(stmt.line_items.length, 1);           // only February expenses
   assert.equal(stmt.totals.total_spent, 50);
-  assert.equal(stmt.net_from_expenses, -25);
-  assert.equal(stmt.closing.balance, 25);
-  assert.equal(stmt.closing.summary.debtor, 'B');
-  assert.equal(stmt.line_items.length, 1);
+  assert.equal(stmt.charge, -25);                    // B paid in Feb -> A owes B 25
+  assert.equal(stmt.amount_due, -25);
+  assert.equal(stmt.issue, '2026-03-01');            // issued 1st of next month
+  assert.equal(stmt.due, '2026-03-20');              // due the 20th
 });
 
-test('statement includes settlement payments in the month', () => {
+test('statement counts only payments/adjustments applied to that statement', () => {
   const expenses = [{ id: 1, date: '2026-03-01', amount: 300, paid_by: 'A', description: 'x', category: 'Other' }];
-  const payments = [{ id: 1, date: '2026-03-15', from_parent: 'B', to_parent: 'A', amount: 150 }];
-  const stmt = finance.buildStatement('2026-03', expenses, payments, names);
-  assert.equal(stmt.opening.balance, 0);
-  assert.equal(stmt.net_from_expenses, 150);
-  assert.equal(stmt.net_from_payments, -150);
-  assert.equal(stmt.closing.balance, 0);
-  assert.equal(stmt.closing.summary.settled, true);
+  const payments = [
+    { id: 1, date: '2026-04-10', from_parent: 'B', to_parent: 'A', amount: 150, statement_period: '2026-03' }, // applied
+    { id: 2, date: '2026-04-11', from_parent: 'B', to_parent: 'A', amount: 999, statement_period: '2026-04' }, // other statement
+  ];
+  const stmt = finance.buildStatement('2026-03', expenses, payments, names, []);
+  assert.equal(stmt.charge, 150);                    // B owes A 150 for March
+  assert.equal(stmt.net_from_payments, -150);        // only the applied payment
+  assert.equal(stmt.amount_due, 0);
+  assert.equal(stmt.due_summary.settled, true);
+  assert.equal(stmt.payments.length, 1);
 });
 
-test('statement separates disputed items and excludes them from totals', () => {
+test('statement status is overdue past the due date, paid when settled', () => {
+  const expenses = [{ id: 1, date: '2026-03-05', amount: 200, paid_by: 'A', description: 'x', category: 'Other' }];
+  const open = finance.buildStatement('2026-03', expenses, [], names, [], '2026-04-05');
+  assert.equal(open.status, 'open');
+  const overdue = finance.buildStatement('2026-03', expenses, [], names, [], '2026-04-25');
+  assert.equal(overdue.status, 'overdue');
+  const paid = finance.buildStatement('2026-03', expenses,
+    [{ id: 1, date: '2026-04-10', from_parent: 'B', to_parent: 'A', amount: 100, statement_period: '2026-03' }], names, [], '2026-04-25');
+  assert.equal(paid.status, 'paid');
+});
+
+test('statement separates disputed items and excludes them', () => {
   const expenses = [
     { id: 1, date: '2026-04-01', amount: 100, paid_by: 'A', description: 'ok', category: 'Other' },
     { id: 2, date: '2026-04-02', amount: 500, paid_by: 'A', description: 'contested', category: 'Other', status: 'disputed' },
   ];
-  const stmt = finance.buildStatement('2026-04', expenses, [], names);
+  const stmt = finance.buildStatement('2026-04', expenses, [], names, []);
   assert.equal(stmt.line_items.length, 1);
   assert.equal(stmt.disputed_items.length, 1);
-  assert.equal(stmt.totals.total_spent, 100);        // disputed not counted
-  assert.equal(stmt.totals.disputed_total, 500);
-  assert.equal(stmt.closing.balance, 50);            // only the $100 counts
+  assert.equal(stmt.totals.total_spent, 100);
+  assert.equal(stmt.charge, 50);
 });
 
 test('statement reports per-parent responsibility with a custom split', () => {
   const expenses = [
     { id: 1, date: '2026-05-01', amount: 200, paid_by: 'A', description: 'daycare', category: 'Childcare', split_type: 'percent', split_value: 75 },
   ];
-  const stmt = finance.buildStatement('2026-05', expenses, [], names);
+  const stmt = finance.buildStatement('2026-05', expenses, [], names, []);
   assert.equal(stmt.totals.responsibility_a, 150);
   assert.equal(stmt.totals.responsibility_b, 50);
-  assert.equal(stmt.line_items[0].owed_amount, 50); // A paid; B owes B's 50 share
+  assert.equal(stmt.line_items[0].owed_amount, 50);
 });
 
 test('empty month produces a clean zero statement', () => {
-  const stmt = finance.buildStatement('2026-07', [], [], names);
+  const stmt = finance.buildStatement('2026-07', [], [], names, []);
   assert.equal(stmt.totals.total_spent, 0);
-  assert.equal(stmt.closing.balance, 0);
+  assert.equal(stmt.amount_due, 0);
   assert.equal(stmt.line_items.length, 0);
 });
 
 // --- Adjustments / rollover ------------------------------------------------
 
 test('adjustment in favor of A increases what B owes A', () => {
-  const adj = [{ date: '2026-01-01', favor: 'A', amount: 100 }];
-  assert.equal(finance.computeBalance([], [], adj), 100);
+  assert.equal(finance.computeBalance([], [], [{ date: '2026-01-01', favor: 'A', amount: 100 }]), 100);
 });
-
 test('adjustment in favor of B moves the balance the other way', () => {
-  const adj = [{ date: '2026-01-01', favor: 'B', amount: 40 }];
-  assert.equal(finance.computeBalance([], [], adj), -40);
+  assert.equal(finance.computeBalance([], [], [{ date: '2026-01-01', favor: 'B', amount: 40 }]), -40);
 });
 
-test('rollover opening balance flows into the statement', () => {
-  const adj = [{ id: 1, date: '2025-12-31', favor: 'A', amount: 200, label: 'Opening balance' }];
-  const stmt = finance.buildStatement('2026-01', [], [], names, adj);
-  assert.equal(stmt.opening.balance, 200);          // prior rollover carried forward
-  assert.equal(stmt.closing.balance, 200);
-});
-
-test('adjustment within the month appears and affects closing', () => {
-  const adj = [{ id: 1, date: '2026-03-10', favor: 'B', amount: 50, label: 'Credit' }];
+test('adjustment applied to a statement affects that statement only', () => {
+  const adj = [{ id: 1, date: '2026-03-10', favor: 'B', amount: 50, label: 'Credit', statement_period: '2026-03' }];
   const stmt = finance.buildStatement('2026-03', [], [], names, adj);
   assert.equal(stmt.adjustments.length, 1);
   assert.equal(stmt.net_from_adjustments, -50);
-  assert.equal(stmt.closing.balance, -50);
+  assert.equal(stmt.amount_due, -50);
+});
+
+// --- Statement ledger (AR overview) ----------------------------------------
+
+test('statement dates: issued 1st, due 20th of the following month', () => {
+  assert.deepEqual(finance.statementDates('2026-07'), { issue: '2026-08-01', due: '2026-08-20' });
+  assert.deepEqual(finance.statementDates('2026-12'), { issue: '2027-01-01', due: '2027-01-20' });
+});
+
+test('statement ledger tracks charges, payments applied, and outstanding', () => {
+  const expenses = [
+    { id: 1, date: '2026-06-10', amount: 200, paid_by: 'A', description: 'Jun', category: 'Other' }, // charge +100
+    { id: 2, date: '2026-07-10', amount: 100, paid_by: 'A', description: 'Jul', category: 'Other' }, // charge +50
+  ];
+  const payments = [
+    { id: 1, date: '2026-07-15', from_parent: 'B', to_parent: 'A', amount: 100, statement_period: '2026-06' }, // pays June
+    { id: 2, date: '2026-08-01', from_parent: 'B', to_parent: 'A', amount: 20 }, // unapplied
+  ];
+  const led = finance.statementLedger(expenses, payments, [], names, '2026-08-25');
+  const jun = led.statements.find((s) => s.period === '2026-06');
+  const jul = led.statements.find((s) => s.period === '2026-07');
+  assert.equal(jun.charge, 100);
+  assert.equal(jun.remaining, 0);
+  assert.equal(jun.status, 'paid');
+  assert.equal(jul.charge, 50);
+  assert.equal(jul.remaining, 50);
+  assert.equal(jul.status, 'overdue');      // Aug 25 is past Jul-statement due (Aug 20)
+  assert.equal(led.unapplied, -20);         // the $20 unapplied payment
+  assert.equal(led.total_outstanding, 30);  // 0 + 50 - 20
 });
 
 // --- Reporting -------------------------------------------------------------
