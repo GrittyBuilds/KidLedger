@@ -126,6 +126,26 @@
     .modal { width: 100%; max-width: 520px; margin: 0; max-height: 92vh; overflow-y: auto; }
     .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow); z-index: 60; max-width: 90vw; }
     .toast.err { background: var(--red); }
+    /* Charts */
+    .chart-bars { display: flex; align-items: flex-end; gap: 12px; padding: 8px 0 0; }
+    .cbar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+    .cbar-wrap { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; height: 168px; }
+    .cbar { width: 72%; max-width: 48px; background: linear-gradient(180deg, #6d5ef0, #4f46e5); border-radius: 5px 5px 0 0; min-height: 2px; transition: filter .15s; }
+    .cbar:hover { filter: brightness(1.1); }
+    .cbar-val { font-size: 11px; font-weight: 700; color: var(--ink-soft); white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .cbar-x { font-size: 11px; color: var(--muted); white-space: nowrap; }
+    .hbars { display: flex; flex-direction: column; gap: 10px; }
+    .hbar-row { display: grid; grid-template-columns: 130px 1fr auto; align-items: center; gap: 10px; font-size: 13px; }
+    .hbar-label { color: var(--ink-soft); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hbar-track { background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; height: 16px; overflow: hidden; }
+    .hbar-fill { height: 100%; background: linear-gradient(90deg, #4f46e5, #6d5ef0); border-radius: 6px; min-width: 2px; }
+    .hbar-val { font-weight: 700; font-variant-numeric: tabular-nums; }
+    @media (max-width: 520px) { .hbar-row { grid-template-columns: 90px 1fr auto; } }
+    /* Recurring cards */
+    .rec-item { display: flex; align-items: center; gap: 12px; padding: 14px 4px; border-bottom: 1px solid var(--border); }
+    .rec-item:last-child { border-bottom: none; }
+    .rec-item.paused { opacity: .6; }
+    .rec-main { flex: 1; min-width: 0; }
     [hidden] { display: none !important; }
     @media print {
       .topbar, .no-print, .toast { display: none !important; }
@@ -151,7 +171,9 @@
       <button class="tab active" data-view="dashboard">Dashboard</button>
       <button class="tab" data-view="expenses">Expenses</button>
       <button class="tab" data-view="payments">Payments</button>
+      <button class="tab" data-view="recurring">Recurring</button>
       <button class="tab" data-view="statement">Statement</button>
+      <button class="tab" data-view="reports">Reports</button>
       <button class="tab" data-view="settings">Settings</button>
     </nav>
   </header>
@@ -265,6 +287,71 @@
       <div id="statementOutput" class="statement-sheet"></div>
     </section>
 
+    <!-- Recurring -->
+    <section class="view" id="view-recurring">
+      <div class="grid-2">
+        <div class="card">
+          <h2>Add a recurring expense</h2>
+          <p class="muted">For monthly costs like daycare or tuition. KidLedger adds each month's entry automatically when you open the app.</p>
+          <form id="recurringForm" class="stack">
+            <label>Description<input type="text" name="description" placeholder="e.g. After-school care" required /></label>
+            <div class="row">
+              <label>Amount<input type="number" name="amount" step="0.01" min="0.01" required /></label>
+              <label>Day of month<input type="number" name="day" min="1" max="31" value="1" required /></label>
+            </div>
+            <div class="row">
+              <label>Category<select name="category" id="catRec"></select></label>
+              <label>Child<select name="child_id" id="childRec"></select></label>
+            </div>
+            <label>Paid by<select name="paid_by" id="paidByRec"></select></label>
+            <div class="split-fields">
+              <label>Split<select name="split_type" id="splitTypeRec">
+                <option value="even">Even (50/50)</option>
+                <option value="percent">By percentage</option>
+                <option value="amount">By dollar amount</option>
+                <option value="full">One parent pays 100%</option>
+              </select></label>
+              <label id="recPercentWrap" hidden><span id="recPercentLabel">Parent A's share (%)</span><input type="number" name="split_percent" min="0" max="100" step="1" placeholder="50" /></label>
+              <label id="recAmountWrap" hidden><span id="recAmountLabel">Parent A's share ($)</span><input type="number" name="split_amount" min="0" step="0.01" placeholder="0.00" /></label>
+              <label id="recFullWrap" hidden>Who is responsible for the full amount?<select name="split_full" id="splitFullRec"></select></label>
+            </div>
+            <div class="row">
+              <label>Starts<input type="month" name="start_month" required /></label>
+              <label>Ends (optional)<input type="month" name="end_month" /></label>
+            </div>
+            <label class="inline"><input type="checkbox" name="tax_deductible" id="recTax" /> Tax-relevant (medical / childcare)</label>
+            <button type="submit" class="btn primary">Add recurring expense</button>
+          </form>
+        </div>
+        <div class="card">
+          <h2>Recurring expenses</h2>
+          <div id="recurringList" class="list">Loading…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reports -->
+    <section class="view" id="view-reports">
+      <div class="card">
+        <h2>Monthly spending</h2>
+        <p class="muted">Total approved expenses per month (last 6 months). Hover a bar for the exact amount.</p>
+        <div id="chartMonthly" class="chart-bars"></div>
+      </div>
+      <div class="card">
+        <h2>Spending by category</h2>
+        <p class="muted">All approved expenses to date.</p>
+        <div id="chartCategory" class="hbars"></div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <h2>Tax-relevant summary</h2>
+          <button class="btn ghost" id="exportTaxBtn">⬇ CSV</button>
+        </div>
+        <p class="muted">Approved expenses flagged tax-relevant, grouped by year. Each parent's responsibility share is shown separately — useful for FSA claims or splitting deductions.</p>
+        <div id="taxSummary" class="table-wrap"></div>
+      </div>
+    </section>
+
     <!-- Settings -->
     <section class="view" id="view-settings">
       <div class="grid-2">
@@ -341,6 +428,7 @@
         </div>
 
         <label class="inline"><input type="checkbox" name="status_disputed" id="statusDisputed" /> Mark as disputed (excluded from the balance until approved)</label>
+        <label class="inline"><input type="checkbox" name="tax_deductible" id="taxDeductible" /> Tax-relevant (medical / childcare — for FSA or tax time)</label>
 
         <label>Notes<input type="text" name="notes" placeholder="Optional" /></label>
         <div class="row end">
@@ -375,12 +463,12 @@
     const CATEGORIES = ['Medical', 'Childcare', 'Education', 'Activities', 'Clothing', 'Food', 'Travel', 'Other'];
 
     function blankState() {
-      return { seq: 0, parents: { A: 'Parent A', B: 'Parent B' }, children: [], expenses: [], payments: [], locked_months: [] };
+      return { seq: 0, parents: { A: 'Parent A', B: 'Parent B' }, children: [], expenses: [], payments: [], locked_months: [], recurring: [] };
     }
     let state = load();
 
     function normalizeExpense(e) {
-      return Object.assign({ category: 'Other', child_id: null, notes: null, split_type: 'even', split_value: null, status: 'approved', receipt: null }, e);
+      return Object.assign({ category: 'Other', child_id: null, notes: null, split_type: 'even', split_value: null, status: 'approved', receipt: null, tax_deductible: false, recurring_id: null }, e);
     }
     function load() {
       try {
@@ -390,6 +478,7 @@
         const s = Object.assign(blankState(), parsed, {
           parents: Object.assign({ A: 'Parent A', B: 'Parent B' }, parsed.parents || {}),
           locked_months: Array.isArray(parsed.locked_months) ? parsed.locked_months : [],
+          recurring: Array.isArray(parsed.recurring) ? parsed.recurring : [],
         });
         s.expenses = (s.expenses || []).map(normalizeExpense);
         return s;
@@ -435,6 +524,41 @@
     function expensesDesc() { return [...state.expenses].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id); }
     function paymentsDesc() { return [...state.payments].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id); }
     function isLocked(dateStr) { return !!dateStr && state.locked_months.includes(dateStr.slice(0, 7)); }
+    function nextMonthStr(m) { let [y, mo] = m.split('-').map(Number); mo++; if (mo > 12) { mo = 1; y++; } return y + '-' + String(mo).padStart(2, '0'); }
+    function daysInMonth(y, mo) { return new Date(y, mo, 0).getDate(); }
+    function occurrenceDate(m, day) { const [y, mo] = m.split('-').map(Number); const d = Math.min(Math.max(day || 1, 1), daysInMonth(y, mo)); return m + '-' + String(d).padStart(2, '0'); }
+
+    // Auto-create the actual expense entries for each active recurring template.
+    // Months already generated are remembered so deleting an instance won't resurrect it.
+    function generateRecurring() {
+      const cur = thisMonth();
+      let created = 0;
+      for (const t of state.recurring) {
+        if (!t.active) continue;
+        if (!Array.isArray(t.generated)) t.generated = [];
+        let m = t.start_month;
+        let guard = 0;
+        while (m <= cur && (!t.end_month || m <= t.end_month) && guard < 600) {
+          guard++;
+          if (!t.generated.includes(m)) {
+            const date = occurrenceDate(m, t.day);
+            if (!isLocked(date)) {
+              state.expenses.push(normalizeExpense({
+                id: nextId(), date, description: t.description, amount: Number(t.amount),
+                category: t.category || 'Other', paid_by: t.paid_by, child_id: t.child_id || null,
+                split_type: t.split_type || 'even', split_value: t.split_value == null ? null : t.split_value,
+                status: 'approved', tax_deductible: !!t.tax_deductible, recurring_id: t.id, notes: 'Auto (recurring)',
+              }));
+              t.generated.push(m);
+              created++;
+            }
+          }
+          m = nextMonthStr(m);
+        }
+      }
+      if (created) save();
+      return created;
+    }
 
     let toastTimer;
     function toast(msg, isErr) {
@@ -472,6 +596,11 @@
         state.children.map((c) => '<option value="' + c.id + '">' + esc(c.name) + '</option>').join('');
       $('#fPaidBy').innerHTML = '<option value="">Either parent</option>' + parentOptions('').replace('selected', '');
       $('#fStatus').innerHTML = '<option value="">All statuses</option><option value="approved">Approved</option><option value="disputed">Disputed</option>';
+      // Recurring form
+      $('#catRec').innerHTML = categoryOptions('Childcare');
+      $('#childRec').innerHTML = childOptions('');
+      $('#paidByRec').innerHTML = parentOptions('A');
+      $('#splitFullRec').innerHTML = parentOptions('A');
     }
 
     // ---------------------------------------------------------------------
@@ -589,7 +718,7 @@
             '<td>' + fmtDate(e.date) + (locked ? ' <span class="pill tiny" title="Finalized month">🔒</span>' : '') + '</td>' +
             '<td>' + esc(e.description) +
               (disputed ? ' <span class="pill warn tiny">Disputed</span>' : '') +
-              '<div class="li-sub">' + esc(Finance.splitLabel(e, state.parents)) + (e.receipt ? ' · 📎 receipt' : '') + (e.notes ? ' · ' + esc(e.notes) : '') + '</div></td>' +
+              '<div class="li-sub">' + esc(Finance.splitLabel(e, state.parents)) + (e.receipt ? ' · 📎 receipt' : '') + (e.tax_deductible ? ' · 🏷 tax' : '') + (e.notes ? ' · ' + esc(e.notes) : '') + '</div></td>' +
             '<td>' + esc(e.category) + '</td>' +
             '<td>' + (childName(e.child_id) ? esc(childName(e.child_id)) : '<span class="muted">—</span>') + '</td>' +
             '<td><span class="pill ' + e.paid_by.toLowerCase() + '">' + esc(parentName(e.paid_by)) + '</span></td>' +
@@ -634,14 +763,14 @@
     function exportCsv() {
       const rows = filteredExpenses();
       if (!rows.length) { toast('Nothing to export with these filters', true); return; }
-      const header = ['Date', 'Description', 'Category', 'Child', 'Paid by', 'Amount', state.parents.A + ' share', state.parents.B + ' share', 'Split', 'Status', 'Notes'];
+      const header = ['Date', 'Description', 'Category', 'Child', 'Paid by', 'Amount', state.parents.A + ' share', state.parents.B + ' share', 'Split', 'Status', 'Tax-relevant', 'Notes'];
       const lines = [header.map(csvEscape).join(',')];
       for (const e of [...rows].reverse()) {
         const sh = Finance.shares(e);
         lines.push([
           e.date, e.description, e.category, childName(e.child_id) || '', parentName(e.paid_by),
           e.amount.toFixed(2), sh.A.toFixed(2), sh.B.toFixed(2),
-          Finance.splitLabel(e, state.parents), e.status || 'approved', e.notes || '',
+          Finance.splitLabel(e, state.parents), e.status || 'approved', e.tax_deductible ? 'Yes' : 'No', e.notes || '',
         ].map(csvEscape).join(','));
       }
       downloadBlob(lines.join('\r\n'), 'text/csv;charset=utf-8', 'kidledger-expenses-' + todayISO() + '.csv');
@@ -665,7 +794,7 @@
         id: nextId(), date: v.date, description: v.description, category: v.category || 'Other',
         amount: v.amount, paid_by: v.paid_by, child_id: v.child_id || null, notes: v.notes || null,
         split_type: v.split_type || 'even', split_value: v.split_value == null ? null : v.split_value,
-        status: v.status || 'approved', receipt: v.receipt || null,
+        status: v.status || 'approved', receipt: v.receipt || null, tax_deductible: !!v.tax_deductible,
       }));
       save();
       return true;
@@ -678,7 +807,7 @@
         date: v.date, description: v.description, category: v.category || 'Other',
         amount: v.amount, paid_by: v.paid_by, child_id: v.child_id || null, notes: v.notes || null,
         split_type: v.split_type || 'even', split_value: v.split_value == null ? null : v.split_value,
-        status: v.status || 'approved', receipt: v.receipt || null,
+        status: v.status || 'approved', receipt: v.receipt || null, tax_deductible: !!v.tax_deductible,
       });
       save();
       return true;
@@ -946,6 +1075,7 @@
       form.split_percent.value = expense && expense.split_type === 'percent' ? expense.split_value : '';
       form.split_amount.value = expense && expense.split_type === 'amount' ? expense.split_value : '';
       $('#statusDisputed').checked = expense ? expense.status === 'disputed' : false;
+      $('#taxDeductible').checked = expense ? !!expense.tax_deductible : false;
       setReceiptStatus();
       updateSplitUI();
       $('#expenseModal').hidden = false;
@@ -962,9 +1092,120 @@
         category: f.category.value, child_id: f.child_id.value ? Number(f.child_id.value) : null,
         paid_by: f.paid_by.value, split_type: type, split_value,
         status: f.status_disputed.checked ? 'disputed' : 'approved',
+        tax_deductible: f.tax_deductible.checked,
         receipt: modalReceipt, notes: f.notes.value.trim(),
       };
     }
+
+    // ---------------------------------------------------------------------
+    // Recurring templates
+    // ---------------------------------------------------------------------
+    function updateRecSplitUI() {
+      const form = $('#recurringForm');
+      const type = form.split_type.value;
+      $('#recPercentWrap').hidden = type !== 'percent';
+      $('#recAmountWrap').hidden = type !== 'amount';
+      $('#recFullWrap').hidden = type !== 'full';
+      $('#recPercentLabel').textContent = state.parents.A + "'s share (%)";
+      $('#recAmountLabel').textContent = state.parents.A + "'s share ($)";
+    }
+    function renderRecurring() {
+      const list = $('#recurringList');
+      if (!state.recurring.length) { list.innerHTML = '<div class="empty">No recurring expenses yet.</div>'; return; }
+      list.innerHTML = state.recurring.map((t) => {
+        const range = monthLabel(t.start_month) + (t.end_month ? ' – ' + monthLabel(t.end_month) : ' onward');
+        return '<div class="rec-item' + (t.active ? '' : ' paused') + '">' +
+          '<div class="rec-main"><div class="li-title">' + esc(t.description) +
+            ' <span class="pill tiny">' + esc(Finance.splitLabel(t, state.parents)) + '</span>' +
+            (t.tax_deductible ? ' <span class="pill tiny">🏷 tax</span>' : '') +
+            (t.active ? '' : ' <span class="pill warn tiny">Paused</span>') + '</div>' +
+          '<div class="li-sub">' + money(t.amount) + ' · monthly on day ' + t.day + ' · paid by ' + esc(parentName(t.paid_by)) + ' · ' + range + '</div></div>' +
+          '<div class="row-actions">' +
+            '<button class="mini-btn" data-rec-toggle="' + t.id + '">' + (t.active ? 'Pause' : 'Resume') + '</button>' +
+            '<button class="mini-btn danger" data-rec-del="' + t.id + '">Delete</button>' +
+          '</div></div>';
+      }).join('');
+    }
+    function addRecurring(v) {
+      state.recurring.push({
+        id: nextId(), description: v.description, amount: v.amount, day: v.day,
+        category: v.category, child_id: v.child_id || null, paid_by: v.paid_by,
+        split_type: v.split_type, split_value: v.split_value,
+        start_month: v.start_month, end_month: v.end_month || null,
+        tax_deductible: !!v.tax_deductible, active: true, generated: [],
+      });
+      save();
+    }
+
+    // ---------------------------------------------------------------------
+    // Reports: charts + tax summary
+    // ---------------------------------------------------------------------
+    function approvedExpenses() { return state.expenses.filter((e) => e.status !== 'disputed'); }
+
+    function renderReports() {
+      // Monthly spending: last 6 months ending this month.
+      const months = [];
+      let m = thisMonth();
+      for (let i = 0; i < 6; i++) { months.unshift(m); m = prevMonthStr(m); }
+      const totals = months.map((mm) => approvedExpenses().filter((e) => e.date.slice(0, 7) === mm).reduce((s, e) => s + e.amount, 0));
+      const max = Math.max(1, ...totals);
+      $('#chartMonthly').innerHTML = months.map((mm, i) => {
+        const v = totals[i];
+        const h = Math.round(v / max * 150);
+        const short = new Date(Number(mm.slice(0, 4)), Number(mm.slice(5, 7)) - 1, 1).toLocaleDateString('en-US', { month: 'short' });
+        return '<div class="cbar-col"><div class="cbar-wrap">' +
+          '<div class="cbar-val">' + (v ? '$' + Math.round(v) : '') + '</div>' +
+          '<div class="cbar" style="height:' + h + 'px" title="' + esc(monthLabel(mm)) + ': ' + money(v) + '"></div>' +
+          '</div><div class="cbar-x">' + short + '</div></div>';
+      }).join('');
+
+      // Spending by category (all-time approved).
+      const byCat = {};
+      for (const e of approvedExpenses()) byCat[e.category] = (byCat[e.category] || 0) + e.amount;
+      const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+      const cmax = Math.max(1, ...cats.map((c) => c[1]));
+      $('#chartCategory').innerHTML = cats.length
+        ? cats.map(([k, v]) => '<div class="hbar-row"><span class="hbar-label" title="' + esc(k) + '">' + esc(k) + '</span>' +
+            '<div class="hbar-track"><div class="hbar-fill" style="width:' + Math.round(v / cmax * 100) + '%"></div></div>' +
+            '<span class="hbar-val">' + money(v) + '</span></div>').join('')
+        : '<div class="empty">No expenses yet.</div>';
+
+      renderTaxSummary();
+    }
+
+    function taxByYear() {
+      const flagged = approvedExpenses().filter((e) => e.tax_deductible);
+      const years = {};
+      for (const e of flagged) {
+        const y = e.date.slice(0, 4);
+        const sh = Finance.shares(e);
+        if (!years[y]) years[y] = { count: 0, total: 0, a: 0, b: 0 };
+        years[y].count++;
+        years[y].total += e.amount;
+        years[y].a += sh.A;
+        years[y].b += sh.B;
+      }
+      return Object.entries(years).sort((x, y) => y[0].localeCompare(x[0]));
+    }
+    function renderTaxSummary() {
+      const rows = taxByYear();
+      if (!rows.length) { $('#taxSummary').innerHTML = '<div class="empty">No expenses flagged tax-relevant yet. Tick “Tax-relevant” on an expense to include it here.</div>'; return; }
+      $('#taxSummary').innerHTML = '<table><thead><tr><th>Year</th><th class="num">Items</th><th class="num">Total</th>' +
+        '<th class="num">' + esc(state.parents.A) + ' share</th><th class="num">' + esc(state.parents.B) + ' share</th></tr></thead><tbody>' +
+        rows.map(([y, d]) => '<tr><td>' + y + '</td><td class="num">' + d.count + '</td><td class="num">' + money(d.total) +
+          '</td><td class="num">' + money(d.a) + '</td><td class="num">' + money(d.b) + '</td></tr>').join('') +
+        '</tbody></table>';
+    }
+    function exportTaxCsv() {
+      const rows = taxByYear();
+      if (!rows.length) { toast('No tax-relevant expenses to export', true); return; }
+      const header = ['Year', 'Items', 'Total', state.parents.A + ' share', state.parents.B + ' share'];
+      const lines = [header.map(csvEscape).join(',')];
+      for (const [y, d] of rows) lines.push([y, d.count, d.total.toFixed(2), d.a.toFixed(2), d.b.toFixed(2)].map(csvEscape).join(','));
+      downloadBlob(lines.join('\r\n'), 'text/csv;charset=utf-8', 'kidledger-tax-summary-' + todayISO() + '.csv');
+      toast('Tax summary exported');
+    }
+    function prevMonthStr(mm) { let [y, mo] = mm.split('-').map(Number); mo--; if (mo < 1) { mo = 12; y--; } return y + '-' + String(mo).padStart(2, '0'); }
 
     // ---------------------------------------------------------------------
     // Re-render everything
@@ -974,6 +1215,8 @@
       renderDashboard();
       renderExpenses();
       renderPayments();
+      renderRecurring();
+      renderReports();
       renderSettings();
       renderChildren();
       if ($('#statementOutput').dataset.loaded) loadStatement();
@@ -1134,11 +1377,67 @@
     $('#lockStatementBtn').addEventListener('click', toggleLock);
     $('#printStatementBtn').addEventListener('click', () => window.print());
 
+    // Recurring
+    $('#splitTypeRec').addEventListener('change', updateRecSplitUI);
+    $('#recurringForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const type = f.split_type.value;
+      let split_value = null;
+      if (type === 'percent') split_value = Number(f.split_percent.value) || 0;
+      else if (type === 'amount') split_value = Number(f.split_amount.value) || 0;
+      else if (type === 'full') split_value = f.split_full.value;
+      const v = {
+        description: f.description.value.trim(), amount: Number(f.amount.value),
+        day: Math.min(Math.max(Number(f.day.value) || 1, 1), 31),
+        category: f.category.value, child_id: f.child_id.value ? Number(f.child_id.value) : null,
+        paid_by: f.paid_by.value, split_type: type, split_value,
+        start_month: f.start_month.value, end_month: f.end_month.value || null,
+        tax_deductible: f.tax_deductible.checked,
+      };
+      const errors = [];
+      if (!v.description) errors.push('a description');
+      if (!Number.isFinite(v.amount) || v.amount <= 0) errors.push('a positive amount');
+      if (!/^\d{4}-\d{2}$/.test(v.start_month)) errors.push('a start month');
+      if (v.end_month && v.end_month < v.start_month) errors.push('an end month after the start');
+      if (type === 'percent' && (split_value < 0 || split_value > 100)) errors.push('a percentage between 0 and 100');
+      if (errors.length) return toast('Please enter ' + errors.join(', '), true);
+      addRecurring(v);
+      const created = generateRecurring();
+      f.reset();
+      f.start_month.value = thisMonth();
+      f.day.value = 1;
+      updateRecSplitUI();
+      renderAll();
+      toast('Recurring expense added' + (created ? ' · ' + created + ' entr' + (created === 1 ? 'y' : 'ies') + ' created' : ''));
+    });
+    $('#recurringList').addEventListener('click', (e) => {
+      const tog = e.target.closest('[data-rec-toggle]');
+      const del = e.target.closest('[data-rec-del]');
+      if (tog) {
+        const t = state.recurring.find((x) => String(x.id) === tog.dataset.recToggle);
+        if (t) { t.active = !t.active; save(); if (t.active) generateRecurring(); renderAll(); toast(t.active ? 'Resumed' : 'Paused'); }
+      } else if (del) {
+        if (!confirm('Delete this recurring expense? Entries already created will be kept.')) return;
+        state.recurring = state.recurring.filter((x) => String(x.id) !== String(del.dataset.recDel));
+        save();
+        renderAll();
+        toast('Recurring expense deleted');
+      }
+    });
+
+    // Reports
+    $('#exportTaxBtn').addEventListener('click', exportTaxCsv);
+
     // ---------------------------------------------------------------------
     // Boot
     // ---------------------------------------------------------------------
     $$('input[type="date"]').forEach((i) => { if (!i.value) i.value = todayISO(); });
+    $('#recurringForm').start_month.value = thisMonth();
+    updateRecSplitUI();
+    const createdOnBoot = generateRecurring();
     renderAll();
+    if (createdOnBoot) toast(createdOnBoot + ' recurring expense(s) added for you');
   })();
   </script>
 </body>

@@ -40,6 +40,14 @@ into a browser tab). That's it — nothing to install or run.
   shows the amount due. Print it or save it as a PDF from the browser.
 - **Finalize (lock) a month** — once a month is settled, finalize it to make its
   expenses and payments read-only — an immutable record until you unlock it.
+- **Recurring expenses** — set up monthly costs (daycare, tuition) once, and
+  KidLedger adds each month's entry automatically when you open the app. Pause,
+  resume, or delete templates; deleting keeps entries already created.
+- **Spending charts** — a Reports tab with a monthly-spending trend and a
+  by-category breakdown.
+- **Tax-relevant summary** — flag medical/childcare expenses as tax-relevant and
+  get a per-year summary (with each parent's responsibility share) for FSA claims
+  or tax time. Export it to CSV.
 - **Backup & restore** — export your whole ledger to a `.json` file and import it
   later (or on another device). Import merges IDs safely so nothing collides.
 - **Configurable** — set both parents' real names and add your children.
