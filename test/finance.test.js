@@ -116,8 +116,10 @@ test('single-period statement shows that month charges and amount due', () => {
   const stmt = finance.buildStatement('2026-02', expenses, [], names, []);
   assert.equal(stmt.line_items.length, 1);           // only February expenses
   assert.equal(stmt.totals.total_spent, 50);
-  assert.equal(stmt.charge, -25);                    // B paid in Feb -> A owes B 25
-  assert.equal(stmt.amount_due, -25);
+  assert.equal(stmt.charge, -25);                    // B paid in Feb -> A owes B 25 (a credit)
+  assert.equal(stmt.status, 'settled');              // negative balance = credit, carried forward
+  assert.equal(stmt.amount_due, 0);
+  assert.equal(stmt.carried_forward, -25);
   assert.equal(stmt.issue, '2026-03-01');            // issued 1st of next month
   assert.equal(stmt.due, '2026-03-20');              // due the 20th
 });
@@ -190,7 +192,10 @@ test('adjustment applied to a statement affects that statement only', () => {
   const stmt = finance.buildStatement('2026-03', [], [], names, adj);
   assert.equal(stmt.adjustments.length, 1);
   assert.equal(stmt.net_from_adjustments, -50);
-  assert.equal(stmt.amount_due, -50);
+  // A $50 credit on a statement with no charges is an overpayment: settled, carried forward.
+  assert.equal(stmt.status, 'settled');
+  assert.equal(stmt.amount_due, 0);
+  assert.equal(stmt.carried_forward, -50);
 });
 
 // --- Statement ledger (AR overview) ----------------------------------------
@@ -220,6 +225,49 @@ test('statement ledger tracks charges, payments applied, and outstanding', () =>
   assert.equal(jul.status, 'overdue');      // Aug 25 is past Jul-statement due (Aug 20)
   assert.equal(led.unapplied, -20);         // the $20 unapplied payment
   assert.equal(led.total_outstanding, 30);  // 0 + 50 - 20
+});
+
+// --- Overpayment carry-forward ---------------------------------------------
+
+test('overpayment marks a statement Settled and carries the excess to the next', () => {
+  const expenses = [
+    { id: 1, date: '2026-06-10', amount: 100, paid_by: 'A', description: 'Jun', category: 'Other' }, // charge +50
+    { id: 2, date: '2026-07-10', amount: 100, paid_by: 'A', description: 'Jul', category: 'Other' }, // charge +50
+  ];
+  const payments = [{ id: 1, date: '2026-07-05', from_parent: 'B', to_parent: 'A', amount: 80, statement_period: '2026-06' }]; // overpay June by 30
+  const led = finance.statementLedger(expenses, payments, [], names, '2026-08-25');
+  const jun = led.statements.find((s) => s.period === '2026-06');
+  const jul = led.statements.find((s) => s.period === '2026-07');
+  assert.equal(jun.status, 'settled');        // not overdue — overpaid
+  assert.equal(jun.remaining, 0);
+  assert.equal(jun.carried_forward, -30);     // $30 credit forward
+  assert.equal(jul.carry_in, -30);
+  assert.equal(jul.remaining, 20);            // 50 charge − 30 credit
+  assert.equal(led.total_outstanding, 20);
+});
+
+test('buildStatement shows carried-in credit and carried-forward overpayment', () => {
+  const expenses = [
+    { id: 1, date: '2026-06-10', amount: 100, paid_by: 'A', description: 'Jun', category: 'Other' },
+    { id: 2, date: '2026-07-10', amount: 100, paid_by: 'A', description: 'Jul', category: 'Other' },
+  ];
+  const payments = [{ id: 1, date: '2026-07-05', from_parent: 'B', to_parent: 'A', amount: 80, statement_period: '2026-06' }];
+  const jun = finance.buildStatement('2026-06', expenses, payments, names, [], '2026-08-25');
+  assert.equal(jun.status, 'settled');
+  assert.equal(jun.carried_forward, -30);
+  assert.equal(jun.amount_due, 0);
+  const jul = finance.buildStatement('2026-07', expenses, payments, names, [], '2026-08-25');
+  assert.equal(jul.carry_in, -30);
+  assert.equal(jul.amount_due, 20);
+});
+
+test('overpayment beyond all statements becomes a standing credit balance', () => {
+  const expenses = [{ id: 1, date: '2026-06-10', amount: 100, paid_by: 'A', description: 'Jun', category: 'Other' }]; // charge +50
+  const payments = [{ id: 1, date: '2026-07-05', from_parent: 'B', to_parent: 'A', amount: 200, statement_period: '2026-06' }]; // overpay by 150
+  const led = finance.statementLedger(expenses, payments, [], names, '2026-08-25');
+  assert.equal(led.statements[0].status, 'settled');
+  assert.equal(led.credit_carry, -150);
+  assert.equal(led.total_outstanding, -150);  // A owes B 150 (a credit for B)
 });
 
 // --- Reporting -------------------------------------------------------------

@@ -86,6 +86,10 @@ browser). The same Client ID and Google account are used on every device.
   manual **adjustments / rollover** (opening balances, agreed credits,
   corrections) and **apply each to a specific open statement** (or leave it
   unapplied). This drives the Open/Paid/Overdue status per statement.
+- **Automatic overpayment carry-forward** — if a statement is overpaid, it's
+  marked **Settled** (not overdue) and the excess automatically becomes a credit
+  against the next statement (cascading forward). Any overpayment beyond the
+  latest statement shows as a standing **credit balance**.
 - **Receipt attachments** — attach a photo or PDF to any expense as proof. Images
   are automatically downscaled to keep storage small; view receipts in-app.
 - **Dispute / approve status** — flag a contested charge as *disputed* and it's
