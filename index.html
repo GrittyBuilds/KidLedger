@@ -10,7 +10,7 @@
       --bg: #f4f6fb; --surface: #fff; --surface-2: #f8fafc; --ink: #1a2233;
       --ink-soft: #5b6577; --muted: #8a93a6; --border: #e4e8f0; --brand: #4f46e5;
       --brand-soft: #eef2ff; --green: #0f9d6b; --green-soft: #e6f6ef; --red: #d64545;
-      --red-soft: #fdecec; --amber: #b7791f;
+      --red-soft: #fdecec; --amber: #b7791f; --amber-soft: #fbf3e2;
       --shadow: 0 1px 3px rgba(20,30,60,.08), 0 8px 24px rgba(20,30,60,.06); --radius: 14px;
     }
     * { box-sizing: border-box; }
@@ -45,6 +45,8 @@
     .row.end { justify-content: flex-end; }
     .row.end > * { flex: 0 0 auto; }
     label { display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+    label.inline { flex-direction: row; align-items: center; gap: 8px; font-weight: 600; }
+    label.inline input { width: auto; }
     input, select { font: inherit; padding: 9px 11px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); color: var(--ink); font-weight: 500; }
     input:focus, select:focus { outline: 2px solid var(--brand-soft); border-color: var(--brand); }
     .btn { font: inherit; font-weight: 600; padding: 10px 16px; border-radius: 9px; border: 1px solid transparent; cursor: pointer; transition: transform .05s, filter .15s, background .15s; }
@@ -68,24 +70,40 @@
     .pill.a { background: #e0f0ff; color: #1266b3; }
     .pill.b { background: #fdeede; color: #b7791f; }
     .pill.pay { background: var(--green-soft); color: var(--green); }
+    .pill.warn { background: var(--red-soft); color: var(--red); }
+    .pill.tiny { font-size: 10px; padding: 1px 7px; }
     .glance { display: flex; flex-direction: column; gap: 10px; }
     .glance-row { display: flex; justify-content: space-between; font-size: 14px; padding: 6px 0; border-bottom: 1px dashed var(--border); }
     .glance-row:last-child { border-bottom: none; }
     .glance-row .g-val { font-weight: 700; font-variant-numeric: tabular-nums; }
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-    th, td { text-align: left; padding: 10px 10px; border-bottom: 1px solid var(--border); }
+    th, td { text-align: left; padding: 10px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
     th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
     td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
     tr:hover td { background: var(--surface-2); }
-    .filters { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 14px; }
-    .row-actions { display: flex; gap: 6px; }
+    .filters { display: flex; align-items: flex-end; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+    .filters label { font-size: 12px; }
+    .filters input, .filters select { padding: 7px 9px; }
+    .filters .grow { flex: 1 1 180px; }
+    .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
     .mini-btn { font-size: 12px; padding: 4px 9px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; color: var(--ink-soft); }
     .mini-btn:hover { background: var(--surface-2); }
     .mini-btn.danger { color: var(--red); }
     .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
     .chip { display: inline-flex; align-items: center; gap: 8px; background: var(--surface-2); border: 1px solid var(--border); padding: 6px 8px 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; }
     .chip button { border: none; background: transparent; cursor: pointer; color: var(--muted); font-size: 14px; }
+    .breakdown { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 620px) { .breakdown { grid-template-columns: 1fr; } }
+    .bd-title { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 6px; }
+    .bd-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border); font-size: 13.5px; }
+    .bd-row:last-child { border-bottom: none; }
+    .bd-row .v { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .split-fields { border: 1px dashed var(--border); border-radius: 10px; padding: 12px; background: var(--surface-2); display: flex; flex-direction: column; gap: 10px; }
+    .split-preview { font-size: 13px; font-weight: 600; color: var(--brand); }
+    .receipt-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .receipt-body img, .receipt-body iframe { width: 100%; border: 1px solid var(--border); border-radius: 10px; }
+    .receipt-body iframe { height: 70vh; }
     .statement-controls { display: flex; gap: 8px; flex-wrap: wrap; }
     .stmt { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 34px; }
     .stmt-head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--ink); padding-bottom: 16px; margin-bottom: 20px; }
@@ -93,19 +111,20 @@
     .stmt-head .stmt-brand { font-size: 13px; color: var(--muted); }
     .stmt-period { text-align: right; }
     .stmt-period .big { font-size: 18px; font-weight: 700; }
+    .lock-badge { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--green-soft); color: var(--green); }
     .stmt-section-title { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 22px 0 8px; }
     .stmt-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px; }
     .stmt-summary .box { border: 1px solid var(--border); border-radius: 10px; padding: 14px; background: var(--surface-2); }
     .stmt-summary .box .k { font-size: 12px; color: var(--muted); }
     .stmt-summary .box .v { font-size: 18px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
     .stmt-total-line { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
-    .stmt-total-line.grand { border-top: 2px solid var(--ink); margin-top: 8px; padding-top: 14px; font-size: 18px; font-weight: 700; }
     .stmt-callout { margin-top: 18px; padding: 16px 18px; border-radius: 10px; background: var(--brand-soft); color: var(--brand); font-size: 16px; font-weight: 700; }
     .stmt-callout.settled { background: var(--green-soft); color: var(--green); }
+    .stmt-note { margin-top: 14px; padding: 12px 14px; border-radius: 10px; background: var(--amber-soft); color: var(--amber); font-size: 13px; font-weight: 600; }
     .empty { padding: 26px; text-align: center; color: var(--muted); font-size: 14px; }
     .modal-backdrop { position: fixed; inset: 0; background: rgba(20,30,60,.45); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 40; }
-    .modal { width: 100%; max-width: 480px; margin: 0; max-height: 90vh; overflow-y: auto; }
-    .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow); z-index: 60; }
+    .modal { width: 100%; max-width: 520px; margin: 0; max-height: 92vh; overflow-y: auto; }
+    .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow); z-index: 60; max-width: 90vw; }
     .toast.err { background: var(--red); }
     [hidden] { display: none !important; }
     @media print {
@@ -125,7 +144,7 @@
       <span class="logo">🧾</span>
       <div>
         <h1>KidLedger</h1>
-        <p class="tagline">Shared expenses, split 50/50</p>
+        <p class="tagline">Shared expenses, fairly split</p>
       </div>
     </div>
     <nav class="tabs" id="tabs">
@@ -147,7 +166,7 @@
       </div>
       <div class="grid-2">
         <div class="card">
-          <h2>Add an expense</h2>
+          <h2>Quick add (50/50)</h2>
           <form id="quickExpenseForm" class="stack">
             <div class="row">
               <label>Date<input type="date" name="date" required /></label>
@@ -160,6 +179,7 @@
             </div>
             <label>Paid by<select name="paid_by" id="paidByQuick"></select></label>
             <button type="submit" class="btn primary">Add expense</button>
+            <p class="muted">Need a custom split, a receipt, or to flag a dispute? Use <a class="link" data-view="expenses" role="button">＋ New expense</a>.</p>
           </form>
         </div>
         <div class="card">
@@ -181,13 +201,23 @@
       <div class="card">
         <div class="card-head">
           <h2>Expenses</h2>
-          <button class="btn primary" id="newExpenseBtn">+ New expense</button>
+          <button class="btn primary" id="newExpenseBtn">＋ New expense</button>
         </div>
         <div class="filters">
-          <label>Month<input type="month" id="expenseMonthFilter" /></label>
-          <button class="btn ghost" id="clearExpenseFilter">Clear</button>
+          <label class="grow">Search<input type="search" id="fSearch" placeholder="Description, notes, category…" /></label>
+          <label>Month<input type="month" id="fMonth" /></label>
+          <label>Category<select id="fCategory"></select></label>
+          <label>Child<select id="fChild"></select></label>
+          <label>Paid by<select id="fPaidBy"></select></label>
+          <label>Status<select id="fStatus"></select></label>
+          <button class="btn ghost" id="fClear">Clear</button>
+          <button class="btn ghost" id="exportCsvBtn">⬇ CSV</button>
         </div>
         <div id="expenseTable" class="table-wrap">Loading…</div>
+      </div>
+      <div class="card">
+        <h2>Breakdown <span class="muted" id="breakdownScope"></span></h2>
+        <div id="breakdown" class="breakdown"></div>
       </div>
     </section>
 
@@ -226,9 +256,11 @@
           <div class="statement-controls">
             <input type="month" id="statementMonth" />
             <button class="btn primary" id="loadStatementBtn">Generate</button>
+            <button class="btn ghost" id="lockStatementBtn">Finalize month</button>
             <button class="btn ghost" id="printStatementBtn">Print / Save PDF</button>
           </div>
         </div>
+        <p class="muted">Finalizing locks a month so its expenses and payments can't be changed — an immutable record once you've both settled.</p>
       </div>
       <div id="statementOutput" class="statement-sheet"></div>
     </section>
@@ -265,7 +297,7 @@
       </div>
       <div class="card">
         <h2>How the math works</h2>
-        <p class="muted">Every expense is split evenly. Whoever pays covers the other parent's half, so the other parent owes them 50% of that expense. Settlement payments reduce the running balance. The monthly statement carries any prior balance forward, adds the month's expenses and payments, and shows who owes whom at month end.</p>
+        <p class="muted">Each expense is divided into a responsibility share for each parent — evenly by default, or by a custom percentage, a fixed dollar amount, or 100% to one parent. Whoever pays covers the other parent's share, so the other parent owes them that amount. Disputed expenses are excluded from the balance until approved. Settlement payments reduce the running balance. The monthly statement carries any prior balance forward, adds the month's activity, and shows who owes whom at month end.</p>
       </div>
     </section>
   </main>
@@ -289,12 +321,44 @@
           <label>Child<select name="child_id" id="childFull"></select></label>
         </div>
         <label>Paid by<select name="paid_by" id="paidByFull"></select></label>
+
+        <div class="split-fields">
+          <label>Split<select name="split_type" id="splitType">
+            <option value="even">Even (50/50)</option>
+            <option value="percent">By percentage</option>
+            <option value="amount">By dollar amount</option>
+            <option value="full">One parent pays 100%</option>
+          </select></label>
+          <label id="splitPercentWrap" hidden><span id="splitPercentLabel">Parent A's share (%)</span><input type="number" name="split_percent" min="0" max="100" step="1" placeholder="50" /></label>
+          <label id="splitAmountWrap" hidden><span id="splitAmountLabel">Parent A's share ($)</span><input type="number" name="split_amount" min="0" step="0.01" placeholder="0.00" /></label>
+          <label id="splitFullWrap" hidden>Who is responsible for the full amount?<select name="split_full" id="splitFull"></select></label>
+          <div class="split-preview" id="splitPreview"></div>
+        </div>
+
+        <div class="receipt-row">
+          <label style="flex:1;">Receipt (image or PDF)<input type="file" id="receiptInput" accept="image/*,application/pdf" /></label>
+          <div id="receiptStatus" class="li-sub"></div>
+        </div>
+
+        <label class="inline"><input type="checkbox" name="status_disputed" id="statusDisputed" /> Mark as disputed (excluded from the balance until approved)</label>
+
         <label>Notes<input type="text" name="notes" placeholder="Optional" /></label>
         <div class="row end">
           <button type="button" class="btn ghost" id="cancelExpenseModal">Cancel</button>
           <button type="submit" class="btn primary">Save</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Receipt viewer modal -->
+  <div class="modal-backdrop" id="receiptModal" hidden>
+    <div class="modal card" style="max-width:680px;">
+      <div class="card-head">
+        <h2 id="receiptModalTitle">Receipt</h2>
+        <button class="icon-btn" id="closeReceiptModal" aria-label="Close">✕</button>
+      </div>
+      <div id="receiptBody" class="receipt-body"></div>
     </div>
   </div>
 
@@ -311,18 +375,24 @@
     const CATEGORIES = ['Medical', 'Childcare', 'Education', 'Activities', 'Clothing', 'Food', 'Travel', 'Other'];
 
     function blankState() {
-      return { seq: 0, parents: { A: 'Parent A', B: 'Parent B' }, children: [], expenses: [], payments: [] };
+      return { seq: 0, parents: { A: 'Parent A', B: 'Parent B' }, children: [], expenses: [], payments: [], locked_months: [] };
     }
     let state = load();
 
+    function normalizeExpense(e) {
+      return Object.assign({ category: 'Other', child_id: null, notes: null, split_type: 'even', split_value: null, status: 'approved', receipt: null }, e);
+    }
     function load() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return blankState();
         const parsed = JSON.parse(raw);
-        return Object.assign(blankState(), parsed, {
+        const s = Object.assign(blankState(), parsed, {
           parents: Object.assign({ A: 'Parent A', B: 'Parent B' }, parsed.parents || {}),
+          locked_months: Array.isArray(parsed.locked_months) ? parsed.locked_months : [],
         });
+        s.expenses = (s.expenses || []).map(normalizeExpense);
+        return s;
       } catch (e) {
         console.error('Failed to load state', e);
         return blankState();
@@ -332,7 +402,7 @@
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       } catch (e) {
-        toast('Could not save — storage may be full or blocked', true);
+        toast('Could not save — storage may be full (large receipts?) or blocked', true);
       }
     }
     function nextId() { state.seq = (state.seq || 0) + 1; return state.seq; }
@@ -361,11 +431,10 @@
     function thisMonth() { return todayISO().slice(0, 7); }
     function parentName(code) { return code === 'A' ? state.parents.A : state.parents.B; }
     function childName(id) { const c = state.children.find((x) => String(x.id) === String(id)); return c ? c.name : null; }
-    // Expenses enriched with child_name (finance.buildStatement expects it).
     function enrichedExpenses() { return state.expenses.map((e) => Object.assign({}, e, { child_name: childName(e.child_id) })); }
-    // Newest-first copies for lists/tables.
     function expensesDesc() { return [...state.expenses].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id); }
     function paymentsDesc() { return [...state.payments].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id); }
+    function isLocked(dateStr) { return !!dateStr && state.locked_months.includes(dateStr.slice(0, 7)); }
 
     let toastTimer;
     function toast(msg, isErr) {
@@ -374,7 +443,7 @@
       t.className = 'toast' + (isErr ? ' err' : '');
       t.hidden = false;
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
+      toastTimer = setTimeout(() => { t.hidden = true; }, 3200);
     }
 
     // ---------------------------------------------------------------------
@@ -397,6 +466,12 @@
       $('#childQuick').innerHTML = childOptions('');
       $('#payFrom').innerHTML = parentOptions('B');
       $('#payTo').innerHTML = parentOptions('A');
+      // Filters
+      $('#fCategory').innerHTML = '<option value="">All categories</option>' + categoryOptions('').replace('selected', '');
+      $('#fChild').innerHTML = '<option value="">All children</option><option value="none">Unassigned</option>' +
+        state.children.map((c) => '<option value="' + c.id + '">' + esc(c.name) + '</option>').join('');
+      $('#fPaidBy').innerHTML = '<option value="">Either parent</option>' + parentOptions('').replace('selected', '');
+      $('#fStatus').innerHTML = '<option value="">All statuses</option><option value="approved">Approved</option><option value="disputed">Disputed</option>';
     }
 
     // ---------------------------------------------------------------------
@@ -427,16 +502,17 @@
       $('#balanceSub').textContent = s.settled ? 'No outstanding balance.' : s.text;
 
       const m = thisMonth();
-      const monthExp = state.expenses.filter((e) => e.date.slice(0, 7) === m);
+      const monthExp = state.expenses.filter((e) => e.date.slice(0, 7) === m && e.status !== 'disputed');
+      const disputedCount = state.expenses.filter((e) => e.date.slice(0, 7) === m && e.status === 'disputed').length;
       const total = monthExp.reduce((sum, e) => sum + e.amount, 0);
       const byA = monthExp.filter((e) => e.paid_by === 'A').reduce((a, e) => a + e.amount, 0);
       const byB = monthExp.filter((e) => e.paid_by === 'B').reduce((a, e) => a + e.amount, 0);
       $('#monthGlance').innerHTML =
         glanceRow(monthLabel(m) + ' expenses', monthExp.length) +
         glanceRow('Total spent', money(total)) +
-        glanceRow("Each parent's share", money(total / 2)) +
         glanceRow(esc(state.parents.A) + ' paid', money(byA)) +
-        glanceRow(esc(state.parents.B) + ' paid', money(byB));
+        glanceRow(esc(state.parents.B) + ' paid', money(byB)) +
+        (disputedCount ? glanceRow('Disputed (not counted)', disputedCount) : '');
 
       const items = [
         ...state.expenses.map((e) => ({ kind: 'expense', date: e.date, id: e.id, data: e })),
@@ -446,10 +522,11 @@
       $('#recentList').innerHTML = items.length ? items.map((it) => {
         if (it.kind === 'expense') {
           const e = it.data;
+          const disputed = e.status === 'disputed' ? ' <span class="pill warn tiny">Disputed</span>' : '';
           return '<div class="list-item">' +
             '<span class="pill ' + e.paid_by.toLowerCase() + '">' + esc(parentName(e.paid_by)) + ' paid</span>' +
-            '<div class="li-main"><div class="li-title">' + esc(e.description) + '</div>' +
-            '<div class="li-sub">' + fmtDate(e.date) + ' · ' + esc(e.category) + (childName(e.child_id) ? ' · ' + esc(childName(e.child_id)) : '') + '</div></div>' +
+            '<div class="li-main"><div class="li-title">' + esc(e.description) + disputed + '</div>' +
+            '<div class="li-sub">' + fmtDate(e.date) + ' · ' + esc(e.category) + (childName(e.child_id) ? ' · ' + esc(childName(e.child_id)) : '') + ' · ' + esc(Finance.splitLabel(e, state.parents)) + '</div></div>' +
             '<div class="li-amount">' + money(e.amount) + '</div></div>';
         }
         const p = it.data;
@@ -464,31 +541,116 @@
     }
 
     // ---------------------------------------------------------------------
-    // Expenses
+    // Expenses: filters, table, breakdown, CSV
     // ---------------------------------------------------------------------
+    function getFilters() {
+      return {
+        search: $('#fSearch').value.trim().toLowerCase(),
+        month: $('#fMonth').value,
+        category: $('#fCategory').value,
+        child: $('#fChild').value,
+        paidBy: $('#fPaidBy').value,
+        status: $('#fStatus').value,
+      };
+    }
+    function filteredExpenses() {
+      const f = getFilters();
+      return expensesDesc().filter((e) => {
+        if (f.month && e.date.slice(0, 7) !== f.month) return false;
+        if (f.category && e.category !== f.category) return false;
+        if (f.child === 'none' && e.child_id) return false;
+        if (f.child && f.child !== 'none' && String(e.child_id) !== f.child) return false;
+        if (f.paidBy && e.paid_by !== f.paidBy) return false;
+        if (f.status && (e.status || 'approved') !== f.status) return false;
+        if (f.search) {
+          const hay = [e.description, e.notes, e.category, childName(e.child_id)].filter(Boolean).join(' ').toLowerCase();
+          if (!hay.includes(f.search)) return false;
+        }
+        return true;
+      });
+    }
+
     function renderExpenses() {
-      const filter = $('#expenseMonthFilter').value;
-      const rows = expensesDesc().filter((e) => !filter || e.date.slice(0, 7) === filter);
+      const rows = filteredExpenses();
+      renderBreakdown(rows);
       if (!rows.length) {
-        $('#expenseTable').innerHTML = '<div class="empty">No expenses' + (filter ? ' for this month' : ' yet') + '.</div>';
+        $('#expenseTable').innerHTML = '<div class="empty">No expenses match these filters.</div>';
         return;
       }
       $('#expenseTable').innerHTML =
         '<table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Child</th><th>Paid by</th>' +
-        '<th class="num">Amount</th><th class="num">Each share</th><th></th></tr></thead><tbody>' +
-        rows.map((e) => '<tr>' +
-          '<td>' + fmtDate(e.date) + '</td>' +
-          '<td>' + esc(e.description) + (e.notes ? '<div class="li-sub">' + esc(e.notes) + '</div>' : '') + '</td>' +
-          '<td>' + esc(e.category) + '</td>' +
-          '<td>' + (childName(e.child_id) ? esc(childName(e.child_id)) : '<span class="muted">—</span>') + '</td>' +
-          '<td><span class="pill ' + e.paid_by.toLowerCase() + '">' + esc(parentName(e.paid_by)) + '</span></td>' +
-          '<td class="num">' + money(e.amount) + '</td>' +
-          '<td class="num">' + money(e.amount / 2) + '</td>' +
-          '<td><div class="row-actions"><button class="mini-btn" data-edit="' + e.id + '">Edit</button>' +
-          '<button class="mini-btn danger" data-del-expense="' + e.id + '">Delete</button></div></td>' +
-        '</tr>').join('') + '</tbody></table>';
+        '<th class="num">Amount</th><th class="num">Owed</th><th></th></tr></thead><tbody>' +
+        rows.map((e) => {
+          const sh = Finance.shares(e);
+          const owed = e.paid_by === 'A' ? sh.B : sh.A;
+          const locked = isLocked(e.date);
+          const disputed = e.status === 'disputed';
+          return '<tr>' +
+            '<td>' + fmtDate(e.date) + (locked ? ' <span class="pill tiny" title="Finalized month">🔒</span>' : '') + '</td>' +
+            '<td>' + esc(e.description) +
+              (disputed ? ' <span class="pill warn tiny">Disputed</span>' : '') +
+              '<div class="li-sub">' + esc(Finance.splitLabel(e, state.parents)) + (e.receipt ? ' · 📎 receipt' : '') + (e.notes ? ' · ' + esc(e.notes) : '') + '</div></td>' +
+            '<td>' + esc(e.category) + '</td>' +
+            '<td>' + (childName(e.child_id) ? esc(childName(e.child_id)) : '<span class="muted">—</span>') + '</td>' +
+            '<td><span class="pill ' + e.paid_by.toLowerCase() + '">' + esc(parentName(e.paid_by)) + '</span></td>' +
+            '<td class="num">' + money(e.amount) + '</td>' +
+            '<td class="num">' + (disputed ? '<span class="muted">—</span>' : money(owed)) + '</td>' +
+            '<td><div class="row-actions">' +
+              (e.receipt ? '<button class="mini-btn" data-receipt="' + e.id + '">📎</button>' : '') +
+              '<button class="mini-btn" data-dispute="' + e.id + '">' + (disputed ? 'Approve' : 'Dispute') + '</button>' +
+              '<button class="mini-btn" data-edit="' + e.id + '">Edit</button>' +
+              '<button class="mini-btn danger" data-del-expense="' + e.id + '">Delete</button>' +
+            '</div></td></tr>';
+        }).join('') + '</tbody></table>';
     }
 
+    function renderBreakdown(rows) {
+      const scope = $('#breakdownScope');
+      const counted = rows.filter((e) => e.status !== 'disputed');
+      const total = counted.reduce((s, e) => s + e.amount, 0);
+      scope.textContent = '· ' + counted.length + ' expense(s), ' + money(total) + (rows.length !== counted.length ? ' (excludes ' + (rows.length - counted.length) + ' disputed)' : '');
+
+      const byCat = {};
+      const byChild = {};
+      for (const e of counted) {
+        byCat[e.category] = (byCat[e.category] || 0) + e.amount;
+        const cn = childName(e.child_id) || 'Unassigned / shared';
+        byChild[cn] = (byChild[cn] || 0) + e.amount;
+      }
+      const toRows = (obj) => {
+        const entries = Object.entries(obj).sort((a, b) => b[1] - a[1]);
+        if (!entries.length) return '<div class="muted">No expenses.</div>';
+        return entries.map(([k, v]) => '<div class="bd-row"><span>' + esc(k) + '</span><span class="v">' + money(v) + '</span></div>').join('');
+      };
+      $('#breakdown').innerHTML =
+        '<div><div class="bd-title">By category</div>' + toRows(byCat) + '</div>' +
+        '<div><div class="bd-title">By child</div>' + toRows(byChild) + '</div>';
+    }
+
+    function csvEscape(v) {
+      const s = String(v == null ? '' : v);
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    }
+    function exportCsv() {
+      const rows = filteredExpenses();
+      if (!rows.length) { toast('Nothing to export with these filters', true); return; }
+      const header = ['Date', 'Description', 'Category', 'Child', 'Paid by', 'Amount', state.parents.A + ' share', state.parents.B + ' share', 'Split', 'Status', 'Notes'];
+      const lines = [header.map(csvEscape).join(',')];
+      for (const e of [...rows].reverse()) {
+        const sh = Finance.shares(e);
+        lines.push([
+          e.date, e.description, e.category, childName(e.child_id) || '', parentName(e.paid_by),
+          e.amount.toFixed(2), sh.A.toFixed(2), sh.B.toFixed(2),
+          Finance.splitLabel(e, state.parents), e.status || 'approved', e.notes || '',
+        ].map(csvEscape).join(','));
+      }
+      downloadBlob(lines.join('\r\n'), 'text/csv;charset=utf-8', 'kidledger-expenses-' + todayISO() + '.csv');
+      toast('CSV exported');
+    }
+
+    // ---------------------------------------------------------------------
+    // Expense CRUD (with lock enforcement)
+    // ---------------------------------------------------------------------
     function validateExpense(v) {
       const errors = [];
       if (!/^\d{4}-\d{2}-\d{2}$/.test(v.date)) errors.push('a valid date');
@@ -497,26 +659,47 @@
       if (v.paid_by !== 'A' && v.paid_by !== 'B') errors.push('who paid');
       return errors;
     }
-
     function addExpense(v) {
-      state.expenses.push({
+      if (isLocked(v.date)) { toast(monthLabel(v.date.slice(0, 7)) + ' is finalized — unlock it first', true); return false; }
+      state.expenses.push(normalizeExpense({
         id: nextId(), date: v.date, description: v.description, category: v.category || 'Other',
         amount: v.amount, paid_by: v.paid_by, child_id: v.child_id || null, notes: v.notes || null,
-      });
+        split_type: v.split_type || 'even', split_value: v.split_value == null ? null : v.split_value,
+        status: v.status || 'approved', receipt: v.receipt || null,
+      }));
       save();
+      return true;
     }
     function updateExpense(id, v) {
       const e = state.expenses.find((x) => String(x.id) === String(id));
-      if (!e) return;
+      if (!e) return false;
+      if (isLocked(e.date) || isLocked(v.date)) { toast('That month is finalized — unlock it first', true); return false; }
       Object.assign(e, {
         date: v.date, description: v.description, category: v.category || 'Other',
         amount: v.amount, paid_by: v.paid_by, child_id: v.child_id || null, notes: v.notes || null,
+        split_type: v.split_type || 'even', split_value: v.split_value == null ? null : v.split_value,
+        status: v.status || 'approved', receipt: v.receipt || null,
       });
       save();
+      return true;
     }
     function deleteExpense(id) {
+      const e = state.expenses.find((x) => String(x.id) === String(id));
+      if (!e) return;
+      if (isLocked(e.date)) { toast('That month is finalized — unlock it first', true); return; }
       state.expenses = state.expenses.filter((x) => String(x.id) !== String(id));
       save();
+      renderAll();
+      toast('Deleted');
+    }
+    function toggleDispute(id) {
+      const e = state.expenses.find((x) => String(x.id) === String(id));
+      if (!e) return;
+      if (isLocked(e.date)) { toast('That month is finalized — unlock it first', true); return; }
+      e.status = e.status === 'disputed' ? 'approved' : 'disputed';
+      save();
+      renderAll();
+      toast(e.status === 'disputed' ? 'Marked disputed (excluded from balance)' : 'Approved (counts toward balance)');
     }
 
     // ---------------------------------------------------------------------
@@ -526,11 +709,14 @@
       const list = $('#paymentList');
       const rows = paymentsDesc();
       if (!rows.length) { list.innerHTML = '<div class="empty">No settlement payments recorded yet.</div>'; return; }
-      list.innerHTML = rows.map((p) => '<div class="list-item"><span class="pill pay">Payment</span>' +
-        '<div class="li-main"><div class="li-title">' + esc(parentName(p.from_parent)) + ' → ' + esc(parentName(p.to_parent)) + '</div>' +
-        '<div class="li-sub">' + fmtDate(p.date) + (p.method ? ' · ' + esc(p.method) : '') + (p.notes ? ' · ' + esc(p.notes) : '') + '</div></div>' +
-        '<div class="li-amount">' + money(p.amount) + '</div>' +
-        '<button class="mini-btn danger" data-del-payment="' + p.id + '">Delete</button></div>').join('');
+      list.innerHTML = rows.map((p) => {
+        const locked = isLocked(p.date);
+        return '<div class="list-item"><span class="pill pay">Payment</span>' +
+          '<div class="li-main"><div class="li-title">' + esc(parentName(p.from_parent)) + ' → ' + esc(parentName(p.to_parent)) + (locked ? ' <span class="pill tiny">🔒</span>' : '') + '</div>' +
+          '<div class="li-sub">' + fmtDate(p.date) + (p.method ? ' · ' + esc(p.method) : '') + (p.notes ? ' · ' + esc(p.notes) : '') + '</div></div>' +
+          '<div class="li-amount">' + money(p.amount) + '</div>' +
+          '<button class="mini-btn danger" data-del-payment="' + p.id + '">Delete</button></div>';
+      }).join('');
     }
 
     // ---------------------------------------------------------------------
@@ -546,16 +732,19 @@
         : '<span class="muted">No children added yet.</span>';
     }
 
-    function exportBackup() {
-      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    function downloadBlob(content, type, filename) {
+      const blob = new Blob([content], { type });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'kidledger-backup-' + todayISO() + '.json';
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+    function exportBackup() {
+      downloadBlob(JSON.stringify(state, null, 2), 'application/json', 'kidledger-backup-' + todayISO() + '.json');
       toast('Backup downloaded');
     }
     function importBackup(file) {
@@ -563,14 +752,13 @@
       reader.onload = () => {
         try {
           const data = JSON.parse(reader.result);
-          if (!data || !Array.isArray(data.expenses) || !Array.isArray(data.payments)) {
-            throw new Error('Not a valid KidLedger backup');
-          }
+          if (!data || !Array.isArray(data.expenses) || !Array.isArray(data.payments)) throw new Error('Not a valid KidLedger backup');
           if (!confirm('Import this backup? It will replace all current data in this browser.')) return;
           state = Object.assign(blankState(), data, {
             parents: Object.assign({ A: 'Parent A', B: 'Parent B' }, data.parents || {}),
+            locked_months: Array.isArray(data.locked_months) ? data.locked_months : [],
           });
-          // Repair seq if needed so new IDs never collide.
+          state.expenses = state.expenses.map(normalizeExpense);
           const maxId = Math.max(0, ...state.expenses.map((e) => e.id || 0), ...state.payments.map((p) => p.id || 0), ...state.children.map((c) => c.id || 0));
           if (!state.seq || state.seq < maxId) state.seq = maxId;
           save();
@@ -584,7 +772,56 @@
     }
 
     // ---------------------------------------------------------------------
-    // Statement
+    // Receipts
+    // ---------------------------------------------------------------------
+    const RECEIPT_MAX = 3 * 1024 * 1024; // 3 MB stored cap
+    function fileToReceipt(file, cb) {
+      if (file.type && file.type.indexOf('image/') === 0) {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 1400;
+          let w = img.width, h = img.height;
+          if (w > maxDim || h > maxDim) { const s = maxDim / Math.max(w, h); w = Math.round(w * s); h = Math.round(h * s); }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          URL.revokeObjectURL(url);
+          cb({ name: file.name, type: 'image/jpeg', data: canvas.toDataURL('image/jpeg', 0.82) });
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); cb(null, 'Could not read that image'); };
+        img.src = url;
+      } else {
+        if (file.size > RECEIPT_MAX) { cb(null, 'File too large (max 3 MB)'); return; }
+        const reader = new FileReader();
+        reader.onload = () => cb({ name: file.name, type: file.type || 'application/octet-stream', data: reader.result });
+        reader.onerror = () => cb(null, 'Could not read that file');
+        reader.readAsDataURL(file);
+      }
+    }
+    function openReceipt(receipt) {
+      $('#receiptModalTitle').textContent = receipt.name || 'Receipt';
+      const body = $('#receiptBody');
+      if (receipt.type && receipt.type.indexOf('image/') === 0) {
+        body.innerHTML = '<img alt="Receipt" src="' + receipt.data + '" />';
+      } else {
+        body.innerHTML = '<iframe title="Receipt" src="' + receipt.data + '"></iframe>' +
+          '<p class="muted" style="margin-top:10px">If the preview is blank, <a class="link" id="receiptDownload" role="button">download the file</a> instead.</p>';
+      }
+      $('#receiptModal').hidden = false;
+      const dl = $('#receiptDownload');
+      if (dl) dl.addEventListener('click', () => downloadBlob(dataUrlToBlobParts(receipt.data), receipt.type, receipt.name || 'receipt'));
+    }
+    function dataUrlToBlobParts(dataUrl) {
+      const [meta, b64] = dataUrl.split(',');
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return bytes;
+    }
+
+    // ---------------------------------------------------------------------
+    // Statement + locking
     // ---------------------------------------------------------------------
     function loadStatement() {
       const month = $('#statementMonth').value || thisMonth();
@@ -593,18 +830,41 @@
       const s = Finance.buildStatement(month, enrichedExpenses(), state.payments, state.parents);
       out.dataset.loaded = '1';
       out.innerHTML = renderStatement(s);
+      $('#lockStatementBtn').textContent = state.locked_months.includes(month) ? 'Unlock month' : 'Finalize month';
+    }
+    function toggleLock() {
+      const month = $('#statementMonth').value || thisMonth();
+      const i = state.locked_months.indexOf(month);
+      if (i >= 0) {
+        if (!confirm('Unlock ' + monthLabel(month) + '? You will be able to edit its expenses and payments again.')) return;
+        state.locked_months.splice(i, 1);
+        toast(monthLabel(month) + ' unlocked');
+      } else {
+        if (!confirm('Finalize ' + monthLabel(month) + '? Its expenses and payments will be locked from edits until you unlock it.')) return;
+        state.locked_months.push(month);
+        toast(monthLabel(month) + ' finalized');
+      }
+      save();
+      renderAll();
+      loadStatement();
     }
     function fmtSigned(n) { return n === 0 ? money(0) : (n > 0 ? '+' : '−') + money(Math.abs(n)); }
 
     function renderStatement(s) {
       const closing = s.closing.summary;
       const opening = s.opening.summary;
+      const locked = state.locked_months.includes(s.month);
       const items = s.line_items.length ? s.line_items.map((li) => '<tr>' +
         '<td>' + fmtDate(li.date) + '</td>' +
-        '<td>' + esc(li.description) + (li.child ? '<div class="li-sub">' + esc(li.child) + '</div>' : '') + '</td>' +
+        '<td>' + esc(li.description) + (li.child ? '<div class="li-sub">' + esc(li.child) + '</div>' : '') + (li.has_receipt ? '<div class="li-sub">📎 receipt on file</div>' : '') + '</td>' +
         '<td>' + esc(li.category) + '</td><td>' + esc(li.paid_by_name) + '</td>' +
-        '<td class="num">' + money(li.amount) + '</td><td class="num">' + money(li.each_share) + '</td></tr>').join('')
-        : '<tr><td colspan="6" class="empty">No expenses this month.</td></tr>';
+        '<td>' + esc(li.split_label) + '</td>' +
+        '<td class="num">' + money(li.amount) + '</td>' +
+        '<td class="num">' + money(li.owed_amount) + '</td></tr>').join('')
+        : '<tr><td colspan="7" class="empty">No expenses this month.</td></tr>';
+
+      const disputed = s.disputed_items.length ? '<div class="stmt-note">⚠ ' + s.disputed_items.length + ' disputed expense(s) totaling ' + money(s.totals.disputed_total) +
+        ' are excluded from this statement until approved: ' + esc(s.disputed_items.map((d) => d.description).join(', ')) + '.</div>' : '';
 
       const payments = s.payments.length ? '<div class="stmt-section-title">Settlement payments</div>' +
         '<table><thead><tr><th>Date</th><th>From</th><th>To</th><th>Method</th><th class="num">Amount</th></tr></thead><tbody>' +
@@ -612,17 +872,18 @@
           '<td>' + (p.method ? esc(p.method) : '—') + '</td><td class="num">' + money(p.amount) + '</td></tr>').join('') + '</tbody></table>' : '';
 
       return '<div class="stmt"><div class="stmt-head">' +
-        '<div><h2>Billing Statement</h2><div class="stmt-brand">KidLedger · ' + esc(s.names.A) + ' &amp; ' + esc(s.names.B) + '</div></div>' +
+        '<div><h2>Billing Statement</h2><div class="stmt-brand">KidLedger · ' + esc(s.names.A) + ' &amp; ' + esc(s.names.B) + '</div>' +
+          (locked ? '<div class="lock-badge">🔒 Finalized</div>' : '') + '</div>' +
         '<div class="stmt-period"><div class="stmt-brand">Statement period</div><div class="big">' + monthLabel(s.month) + '</div></div></div>' +
         '<div class="stmt-summary">' +
           '<div class="box"><div class="k">Balance brought forward</div><div class="v">' + (opening.settled ? 'Settled' : money(opening.amount)) + '</div>' +
             '<div class="li-sub">' + (opening.settled ? 'No prior balance' : esc(opening.text)) + '</div></div>' +
           '<div class="box"><div class="k">Total spent this month</div><div class="v">' + money(s.totals.total_spent) + '</div>' +
-            '<div class="li-sub">' + s.totals.expense_count + ' expense(s) · each share ' + money(s.totals.each_share) + '</div></div>' +
+            '<div class="li-sub">' + s.totals.expense_count + ' expense(s) · ' + esc(s.names.A) + ' ' + money(s.totals.responsibility_a) + ' / ' + esc(s.names.B) + ' ' + money(s.totals.responsibility_b) + '</div></div>' +
         '</div>' +
         '<div class="stmt-section-title">Expenses</div>' +
-        '<table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Paid by</th><th class="num">Amount</th><th class="num">Each share</th></tr></thead><tbody>' + items + '</tbody></table>' +
-        payments +
+        '<table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Paid by</th><th>Split</th><th class="num">Amount</th><th class="num">Owed to payer</th></tr></thead><tbody>' + items + '</tbody></table>' +
+        disputed + payments +
         '<div class="stmt-section-title">Reconciliation</div>' +
         totalLine(esc(s.names.A) + ' paid this month', money(s.totals.paid_by_a)) +
         totalLine(esc(s.names.B) + ' paid this month', money(s.totals.paid_by_b)) +
@@ -638,23 +899,72 @@
     function totalLine(label, val) { return '<div class="stmt-total-line"><span>' + label + '</span><span>' + val + '</span></div>'; }
 
     // ---------------------------------------------------------------------
-    // Modal (expense editor)
+    // Expense modal
     // ---------------------------------------------------------------------
+    let modalReceipt = null;
+    function updateSplitUI() {
+      const form = $('#expenseForm');
+      const type = form.split_type.value;
+      $('#splitPercentWrap').hidden = type !== 'percent';
+      $('#splitAmountWrap').hidden = type !== 'amount';
+      $('#splitFullWrap').hidden = type !== 'full';
+      $('#splitPercentLabel').textContent = state.parents.A + "'s share (%)";
+      $('#splitAmountLabel').textContent = state.parents.A + "'s share ($)";
+      // Live preview
+      const amt = Number(form.amount.value) || 0;
+      let split_value = null;
+      if (type === 'percent') split_value = Number(form.split_percent.value) || 0;
+      else if (type === 'amount') split_value = Number(form.split_amount.value) || 0;
+      else if (type === 'full') split_value = form.split_full.value;
+      const sh = Finance.shares({ amount: amt, split_type: type, split_value });
+      $('#splitPreview').textContent = amt
+        ? state.parents.A + ': ' + money(sh.A) + '  ·  ' + state.parents.B + ': ' + money(sh.B)
+        : 'Enter an amount to preview the split.';
+    }
+    function setReceiptStatus() {
+      $('#receiptStatus').innerHTML = modalReceipt
+        ? '📎 ' + esc(modalReceipt.name || 'attached') + ' <a class="link" id="removeReceipt" role="button">remove</a>'
+        : '<span class="muted">None attached</span>';
+      const rm = $('#removeReceipt');
+      if (rm) rm.addEventListener('click', () => { modalReceipt = null; $('#receiptInput').value = ''; setReceiptStatus(); });
+    }
     function openExpenseModal(expense) {
       const form = $('#expenseForm');
       form.reset();
+      modalReceipt = expense ? (expense.receipt || null) : null;
       $('#catFull').innerHTML = categoryOptions(expense ? expense.category : 'Other');
       $('#childFull').innerHTML = childOptions(expense ? expense.child_id : '');
       $('#paidByFull').innerHTML = parentOptions(expense ? expense.paid_by : 'A');
+      $('#splitFull').innerHTML = parentOptions(expense && expense.split_type === 'full' ? expense.split_value : 'A');
       $('#expenseModalTitle').textContent = expense ? 'Edit expense' : 'New expense';
       form.id.value = expense ? expense.id : '';
       form.date.value = expense ? expense.date : todayISO();
       form.amount.value = expense ? expense.amount : '';
       form.description.value = expense ? expense.description : '';
       form.notes.value = expense && expense.notes ? expense.notes : '';
+      form.split_type.value = expense ? (expense.split_type || 'even') : 'even';
+      form.split_percent.value = expense && expense.split_type === 'percent' ? expense.split_value : '';
+      form.split_amount.value = expense && expense.split_type === 'amount' ? expense.split_value : '';
+      $('#statusDisputed').checked = expense ? expense.status === 'disputed' : false;
+      setReceiptStatus();
+      updateSplitUI();
       $('#expenseModal').hidden = false;
     }
     function closeExpenseModal() { $('#expenseModal').hidden = true; }
+    function readModalExpense(f) {
+      const type = f.split_type.value;
+      let split_value = null;
+      if (type === 'percent') split_value = Number(f.split_percent.value) || 0;
+      else if (type === 'amount') split_value = Number(f.split_amount.value) || 0;
+      else if (type === 'full') split_value = f.split_full.value;
+      return {
+        date: f.date.value.trim(), amount: Number(f.amount.value), description: f.description.value.trim(),
+        category: f.category.value, child_id: f.child_id.value ? Number(f.child_id.value) : null,
+        paid_by: f.paid_by.value, split_type: type, split_value,
+        status: f.status_disputed.checked ? 'disputed' : 'approved',
+        receipt: modalReceipt, notes: f.notes.value.trim(),
+      };
+    }
 
     // ---------------------------------------------------------------------
     // Re-render everything
@@ -672,26 +982,19 @@
     // ---------------------------------------------------------------------
     // Event wiring
     // ---------------------------------------------------------------------
-    function readExpenseForm(f) {
-      return {
-        date: f.date.value.trim(),
-        amount: Number(f.amount.value),
-        description: f.description.value.trim(),
-        category: f.category ? f.category.value : 'Other',
-        child_id: f.child_id ? (f.child_id.value ? Number(f.child_id.value) : null) : null,
-        paid_by: f.paid_by.value,
-        notes: f.notes ? f.notes.value.trim() : '',
-      };
-    }
-
     $('#quickExpenseForm').addEventListener('submit', (e) => {
       e.preventDefault();
-      const v = readExpenseForm(e.target);
+      const f = e.target;
+      const v = {
+        date: f.date.value.trim(), amount: Number(f.amount.value), description: f.description.value.trim(),
+        category: f.category.value, child_id: f.child_id.value ? Number(f.child_id.value) : null,
+        paid_by: f.paid_by.value, split_type: 'even', status: 'approved',
+      };
       const errors = validateExpense(v);
       if (errors.length) return toast('Please enter ' + errors.join(', '), true);
-      addExpense(v);
-      e.target.reset();
-      e.target.date.value = todayISO();
+      if (!addExpense(v)) return;
+      f.reset();
+      f.date.value = todayISO();
       renderAll();
       toast('Expense added');
     });
@@ -700,14 +1003,30 @@
     $('#closeExpenseModal').addEventListener('click', closeExpenseModal);
     $('#cancelExpenseModal').addEventListener('click', closeExpenseModal);
     $('#expenseModal').addEventListener('click', (e) => { if (e.target.id === 'expenseModal') closeExpenseModal(); });
-
+    $('#splitType').addEventListener('change', updateSplitUI);
+    ['input', 'change'].forEach((ev) => $('#expenseForm').addEventListener(ev, (e) => {
+      if (['amount', 'split_percent', 'split_amount', 'split_full', 'split_type'].includes(e.target.name)) updateSplitUI();
+    }));
+    $('#receiptInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      fileToReceipt(file, (r, err) => {
+        if (err) { toast(err, true); e.target.value = ''; return; }
+        modalReceipt = r;
+        setReceiptStatus();
+        toast('Receipt attached');
+      });
+    });
     $('#expenseForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const f = e.target;
-      const v = readExpenseForm(f);
+      const v = readModalExpense(f);
       const errors = validateExpense(v);
+      if (v.split_type === 'percent' && (v.split_value < 0 || v.split_value > 100)) errors.push('a percentage between 0 and 100');
+      if (v.split_type === 'amount' && v.split_value > v.amount) errors.push("a share no larger than the expense");
       if (errors.length) return toast('Please enter ' + errors.join(', '), true);
-      if (f.id.value) updateExpense(f.id.value, v); else addExpense(v);
+      const ok = f.id.value ? updateExpense(f.id.value, v) : addExpense(v);
+      if (!ok) return;
       closeExpenseModal();
       renderAll();
       toast('Saved');
@@ -716,18 +1035,25 @@
     $('#expenseTable').addEventListener('click', (e) => {
       const edit = e.target.closest('[data-edit]');
       const del = e.target.closest('[data-del-expense]');
-      if (edit) {
-        const exp = state.expenses.find((x) => String(x.id) === edit.dataset.edit);
-        if (exp) openExpenseModal(exp);
-      } else if (del) {
-        if (!confirm('Delete this expense?')) return;
-        deleteExpense(del.dataset.delExpense);
-        renderAll();
-        toast('Deleted');
-      }
+      const disp = e.target.closest('[data-dispute]');
+      const rec = e.target.closest('[data-receipt]');
+      if (edit) { const x = state.expenses.find((z) => String(z.id) === edit.dataset.edit); if (x) openExpenseModal(x); }
+      else if (del) { if (confirm('Delete this expense?')) deleteExpense(del.dataset.delExpense); }
+      else if (disp) { toggleDispute(disp.dataset.dispute); }
+      else if (rec) { const x = state.expenses.find((z) => String(z.id) === rec.dataset.receipt); if (x && x.receipt) openReceipt(x.receipt); }
     });
-    $('#expenseMonthFilter').addEventListener('change', renderExpenses);
-    $('#clearExpenseFilter').addEventListener('click', () => { $('#expenseMonthFilter').value = ''; renderExpenses(); });
+    ['fSearch', 'fMonth', 'fCategory', 'fChild', 'fPaidBy', 'fStatus'].forEach((id) => {
+      $('#' + id).addEventListener('input', renderExpenses);
+      $('#' + id).addEventListener('change', renderExpenses);
+    });
+    $('#fClear').addEventListener('click', () => {
+      ['fSearch', 'fMonth', 'fCategory', 'fChild', 'fPaidBy', 'fStatus'].forEach((id) => { $('#' + id).value = ''; });
+      renderExpenses();
+    });
+    $('#exportCsvBtn').addEventListener('click', exportCsv);
+
+    $('#closeReceiptModal').addEventListener('click', () => { $('#receiptModal').hidden = true; $('#receiptBody').innerHTML = ''; });
+    $('#receiptModal').addEventListener('click', (e) => { if (e.target.id === 'receiptModal') { $('#receiptModal').hidden = true; $('#receiptBody').innerHTML = ''; } });
 
     $('#paymentForm').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -742,6 +1068,7 @@
       if (!Number.isFinite(v.amount) || v.amount <= 0) errors.push('a positive amount');
       if (v.from_parent === v.to_parent) errors.push('two different parents');
       if (errors.length) return toast('Please enter ' + errors.join(', '), true);
+      if (isLocked(v.date)) return toast(monthLabel(v.date.slice(0, 7)) + ' is finalized — unlock it first', true);
       state.payments.push({ id: nextId(), date: v.date, from_parent: v.from_parent, to_parent: v.to_parent, amount: v.amount, method: v.method || null, notes: v.notes || null });
       save();
       f.reset();
@@ -752,6 +1079,8 @@
     $('#paymentList').addEventListener('click', (e) => {
       const del = e.target.closest('[data-del-payment]');
       if (!del) return;
+      const p = state.payments.find((x) => String(x.id) === del.dataset.delPayment);
+      if (p && isLocked(p.date)) return toast('That month is finalized — unlock it first', true);
       if (!confirm('Delete this payment?')) return;
       state.payments = state.payments.filter((x) => String(x.id) !== String(del.dataset.delPayment));
       save();
@@ -802,6 +1131,7 @@
 
     $('#loadStatementBtn').addEventListener('click', loadStatement);
     $('#statementMonth').addEventListener('change', loadStatement);
+    $('#lockStatementBtn').addEventListener('click', toggleLock);
     $('#printStatementBtn').addEventListener('click', () => window.print());
 
     // ---------------------------------------------------------------------
