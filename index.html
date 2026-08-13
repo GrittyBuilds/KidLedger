@@ -12,6 +12,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="KidLedger" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <script>try{var _t=localStorage.getItem('kidledger.theme');if(_t==='dark'||_t==='light')document.documentElement.setAttribute('data-theme',_t);}catch(e){}</script>
   <style>
     :root {
       --bg: #f5f6f9; --surface: #ffffff; --surface-2: #f7f8fb; --surface-3: #eef0f5;
@@ -25,6 +26,31 @@
       --r-sm: 9px; --r: 13px; --r-lg: 18px;
       --serif: Georgia, 'Times New Roman', serif;
       --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      --glass: rgba(255,255,255,.9); color-scheme: light;
+    }
+    /* Dark palette — applied when the OS is dark (unless the user forced light),
+       and whenever the user explicitly picks dark. */
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+      --bg:#0f1116; --surface:#181b22; --surface-2:#1f232c; --surface-3:#2a2f3b;
+      --ink:#e9ebf2; --ink-soft:#aeb6c6; --muted:#7b8494; --border:#282d38; --border-2:#333a48;
+      --brand:#8b83f6; --brand-600:#a29bf8; --brand-050:#20223a; --brand-100:#2a2d49;
+      --green:#39c08d; --green-050:#12271f; --red:#f0736f; --red-050:#2c1b1d;
+      --amber:#d8a94e; --amber-050:#2a2417; --blue:#5aa2ef; --blue-050:#15243a;
+      --glass: rgba(16,17,22,.82); color-scheme: dark;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+      --shadow: 0 1px 3px rgba(0,0,0,.45), 0 6px 20px rgba(0,0,0,.4);
+      --shadow-lg: 0 10px 40px rgba(0,0,0,.55);
+    } }
+    :root[data-theme="dark"] {
+      --bg:#0f1116; --surface:#181b22; --surface-2:#1f232c; --surface-3:#2a2f3b;
+      --ink:#e9ebf2; --ink-soft:#aeb6c6; --muted:#7b8494; --border:#282d38; --border-2:#333a48;
+      --brand:#8b83f6; --brand-600:#a29bf8; --brand-050:#20223a; --brand-100:#2a2d49;
+      --green:#39c08d; --green-050:#12271f; --red:#f0736f; --red-050:#2c1b1d;
+      --amber:#d8a94e; --amber-050:#2a2417; --blue:#5aa2ef; --blue-050:#15243a;
+      --glass: rgba(16,17,22,.82); color-scheme: dark;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+      --shadow: 0 1px 3px rgba(0,0,0,.45), 0 6px 20px rgba(0,0,0,.4);
+      --shadow-lg: 0 10px 40px rgba(0,0,0,.55);
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; }
@@ -213,8 +239,14 @@
     .sheet .grab { width: 40px; height: 4px; border-radius: 2px; background: var(--border-2); margin: 6px auto 10px; }
     .sheet .nav-item { font-size: 15.5px; padding: 13px 14px; }
 
-    .toast { position: fixed; bottom: calc(22px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 11px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow-lg); z-index: 80; max-width: 92vw; text-align: center; }
-    .toast.err { background: var(--red); }
+    .toast { position: fixed; bottom: calc(22px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 12px 20px; border-radius: 11px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow-lg); z-index: 80; max-width: 92vw; text-align: center; }
+    .toast.err { background: var(--red); color: #fff; }
+    .theme-btn { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--border-2); background: var(--surface); color: var(--ink-soft); border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+    .theme-btn:hover { background: var(--surface-2); }
+    .seg { display: inline-flex; border: 1px solid var(--border-2); border-radius: var(--r-sm); overflow: hidden; }
+    .seg button { border: none; background: var(--surface); color: var(--ink-soft); font: inherit; font-size: 13px; font-weight: 600; padding: 9px 16px; cursor: pointer; }
+    .seg button.active { background: var(--brand-050); color: var(--brand); }
+    .seg button + button { border-left: 1px solid var(--border-2); }
 
     /* ---------- Statement (invoice) ---------- */
     .stmt { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow); padding: 40px 42px; }
@@ -255,11 +287,11 @@
     /* ---------- Responsive: mobile ---------- */
     @media (max-width: 860px) {
       .sidebar { display: none; }
-      .mobile-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; position: sticky; top: 0; z-index: 30; background: rgba(255,255,255,.9); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); padding: 12px 16px calc(12px); }
+      .mobile-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; position: sticky; top: 0; z-index: 30; background: var(--glass); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); padding: 12px 16px calc(12px); }
       .mobile-top .mbrand { display: flex; align-items: center; gap: 9px; font-weight: 700; }
       .mobile-top .mbrand .logo { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg,#6d5ef0,#4f46e5); display: grid; place-items: center; font-size: 16px; }
       .content { padding: 18px 16px 96px; }
-      .bottom-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 40; background: rgba(255,255,255,.94); backdrop-filter: blur(12px); border-top: 1px solid var(--border); padding: 8px 6px calc(8px + env(safe-area-inset-bottom)); justify-content: space-around; }
+      .bottom-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 40; background: var(--glass); backdrop-filter: blur(12px); border-top: 1px solid var(--border); padding: 8px 6px calc(8px + env(safe-area-inset-bottom)); justify-content: space-around; }
       .bnav { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; border: none; background: transparent; color: var(--muted); font: inherit; font-size: 10.5px; font-weight: 600; cursor: pointer; padding: 3px 2px; }
       .bnav svg { width: 23px; height: 23px; }
       .bnav.active { color: var(--brand); }
@@ -272,6 +304,13 @@
 
     /* ---------- Print ---------- */
     @media print {
+      /* Always print on a clean light palette, even in dark mode. */
+      :root, :root[data-theme="dark"], :root[data-theme="light"] {
+        --bg:#fff; --surface:#fff; --surface-2:#fff; --surface-3:#eee;
+        --ink:#14161c; --ink-soft:#4a5262; --muted:#7a8090; --border:#e0e2e8; --border-2:#d4d7df;
+        --brand:#4f46e5; --brand-050:#eef1fe; --green:#0f9d6b; --green-050:#e7f6ef; --amber:#b7791f; --amber-050:#fbf3e2;
+        color-scheme: light;
+      }
       .sidebar, .mobile-top, .bottom-nav, .fab, .no-print, .toast { display: none !important; }
       body, .app, .main { background: #fff; display: block; }
       .content { max-width: none; padding: 0; }
@@ -301,14 +340,18 @@
       </nav>
       <div class="sidebar-foot">
         <div class="sf-sync"><span class="dot" id="sideDot"></span><span id="sideSync">Local only</span></div>
-        <div style="margin-top:6px;">KidLedger · v3</div>
+        <button class="theme-btn" id="themeToggleSide" aria-label="Toggle theme">◐ System</button>
+        <div style="margin-top:8px;">KidLedger · v3</div>
       </div>
     </aside>
 
     <div class="main">
       <div class="mobile-top">
         <div class="mbrand"><div class="logo">🧾</div><span id="mobileTitle">Dashboard</span></div>
-        <button class="icon-btn" id="mobileSettings" aria-label="Settings" data-view="settings">⚙️</button>
+        <div style="display:flex;gap:2px;">
+          <button class="icon-btn" id="themeToggleMobile" aria-label="Toggle theme">◐</button>
+          <button class="icon-btn" id="mobileSettings" aria-label="Settings" data-view="settings">⚙️</button>
+        </div>
       </div>
 
       <div class="content" id="content">
@@ -524,6 +567,15 @@
                 <button type="submit" class="btn primary">Add</button>
               </form>
               <div id="childList" class="chips"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Appearance</h2></div>
+            <p class="muted" style="margin-top:-8px;margin-bottom:12px;">Choose a theme. “System” follows your device's light/dark setting.</p>
+            <div class="seg" id="themeSeg">
+              <button type="button" data-theme-set="system">System</button>
+              <button type="button" data-theme-set="light">Light</button>
+              <button type="button" data-theme-set="dark">Dark</button>
             </div>
           </div>
           <div class="card">
@@ -778,6 +830,22 @@
       $$('#bottomNav .bic').forEach((s) => { s.innerHTML = svg(s.dataset.ic); });
       $('#fab').innerHTML = svg('plus');
     }
+
+    // ===================================================================
+    // Theme
+    // ===================================================================
+    const THEME_KEY = 'kidledger.theme';
+    function getTheme() { try { return localStorage.getItem(THEME_KEY) || 'system'; } catch (e) { return 'system'; } }
+    function applyTheme(t) { const r = document.documentElement; if (t === 'dark' || t === 'light') r.setAttribute('data-theme', t); else r.removeAttribute('data-theme'); }
+    function updateThemeUI() {
+      const t = getTheme();
+      const icon = { system: '◐', light: '☀', dark: '🌙' }[t], label = { system: 'System', light: 'Light', dark: 'Dark' }[t];
+      const sb = $('#themeToggleSide'); if (sb) sb.textContent = icon + ' ' + label;
+      const mb = $('#themeToggleMobile'); if (mb) mb.textContent = icon;
+      $$('#themeSeg button').forEach((b) => b.classList.toggle('active', b.dataset.themeSet === t));
+    }
+    function setTheme(t) { try { localStorage.setItem(THEME_KEY, t); } catch (e) {} applyTheme(t); updateThemeUI(); }
+    function cycleTheme() { const o = ['system', 'light', 'dark']; setTheme(o[(o.indexOf(getTheme()) + 1) % 3]); }
 
     // ===================================================================
     // Navigation
@@ -1282,9 +1350,14 @@
 
     if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
 
+    { const ts = $('#themeToggleSide'); if (ts) ts.addEventListener('click', cycleTheme); }
+    { const tm = $('#themeToggleMobile'); if (tm) tm.addEventListener('click', cycleTheme); }
+    $('#themeSeg').addEventListener('click', (e) => { const b = e.target.closest('[data-theme-set]'); if (b) setTheme(b.dataset.themeSet); });
+
     // ===================================================================
     // Boot
     // ===================================================================
+    applyTheme(getTheme()); updateThemeUI();
     injectNavIcons();
     $$('input[type="date"]').forEach((i) => { if (!i.value) i.value = todayISO(); });
     $('#recurringForm').start_month.value = thisMonth();
