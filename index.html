@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>KidLedger — Shared Expense Tracker</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧾</text></svg>" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#4f46e5" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="KidLedger" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <style>
     :root {
       --bg: #f4f6fb; --surface: #fff; --surface-2: #f8fafc; --ink: #1a2233;
@@ -141,6 +148,21 @@
     .hbar-fill { height: 100%; background: linear-gradient(90deg, #4f46e5, #6d5ef0); border-radius: 6px; min-width: 2px; }
     .hbar-val { font-weight: 700; font-variant-numeric: tabular-nums; }
     @media (max-width: 520px) { .hbar-row { grid-template-columns: 90px 1fr auto; } }
+    /* Sync */
+    .sync-status { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 10px; font-size: 13px; font-weight: 600; background: var(--surface-2); border: 1px solid var(--border); color: var(--ink-soft); margin-bottom: 12px; }
+    .sync-status .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: 0 0 auto; }
+    .sync-status.ok { background: var(--green-soft); color: var(--green); border-color: transparent; }
+    .sync-status.ok .dot { background: var(--green); }
+    .sync-status.busy { background: var(--brand-soft); color: var(--brand); border-color: transparent; }
+    .sync-status.busy .dot { background: var(--brand); }
+    .sync-status.bad { background: var(--red-soft); color: var(--red); border-color: transparent; }
+    .sync-status.bad .dot { background: var(--red); }
+    .sync-status.warn { background: var(--amber-soft); color: var(--amber); border-color: transparent; }
+    .sync-status.warn .dot { background: var(--amber); }
+    details.help { margin-top: 12px; font-size: 13px; }
+    details.help summary { cursor: pointer; font-weight: 600; color: var(--brand); }
+    details.help ol { margin: 10px 0 0; padding-left: 20px; color: var(--ink-soft); line-height: 1.7; }
+    details.help code { background: var(--surface-2); border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px; font-size: 12px; }
     /* Recurring cards */
     .rec-item { display: flex; align-items: center; gap: 12px; padding: 14px 4px; border-bottom: 1px solid var(--border); }
     .rec-item:last-child { border-bottom: none; }
@@ -373,6 +395,31 @@
         </div>
       </div>
       <div class="card">
+        <h2>Sync across devices — Google Drive</h2>
+        <p class="muted">Keep your phone and desktop in sync by storing the ledger in your own Google Drive (a single private <code>kidledger.json</code> the app manages — it can't see anything else in your Drive).</p>
+        <div id="syncStatus" class="sync-status"><span class="dot"></span><span id="syncStatusText">Not connected</span></div>
+        <form id="syncForm" class="stack" autocomplete="off">
+          <label>Google Client ID<input type="text" id="clientIdInput" placeholder="1234567890-abc.apps.googleusercontent.com" /></label>
+          <div class="row" style="flex-wrap:wrap;">
+            <button type="button" class="btn primary" id="connectDriveBtn">Connect Google Drive</button>
+            <button type="button" class="btn ghost" id="syncNowBtn">Sync now</button>
+            <button type="button" class="btn ghost" id="disconnectDriveBtn">Disconnect</button>
+          </div>
+          <label class="inline"><input type="checkbox" id="autoSyncToggle" checked /> Auto-sync when I open the app and after changes</label>
+        </form>
+        <details class="help">
+          <summary>One-time setup — how to get a Google Client ID</summary>
+          <ol>
+            <li>Go to <code>console.cloud.google.com</code> and create a project (any name).</li>
+            <li>APIs &amp; Services → <b>Enable APIs</b> → enable <b>Google Drive API</b>.</li>
+            <li>APIs &amp; Services → <b>OAuth consent screen</b> → choose <b>External</b>, fill the app name and your email, and add yourself as a <b>Test user</b>.</li>
+            <li>APIs &amp; Services → <b>Credentials</b> → <b>Create credentials</b> → <b>OAuth client ID</b> → type <b>Web application</b>.</li>
+            <li>Under <b>Authorized JavaScript origins</b> add this site's address (e.g. <code>https://YOURNAME.github.io</code>).</li>
+            <li>Copy the <b>Client ID</b> it gives you, paste it above, and click <b>Connect Google Drive</b>.</li>
+          </ol>
+        </details>
+      </div>
+      <div class="card">
         <h2>Backup &amp; data</h2>
         <p class="muted">Your data is stored only in this browser. Export a backup file regularly so you don't lose your history if the browser data is cleared.</p>
         <div class="row" style="margin-top:14px; flex-wrap:wrap;">
@@ -452,7 +499,9 @@
 
   <div id="toast" class="toast" hidden></div>
 
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="finance.js"></script>
+  <script src="sync.js"></script>
   <script>
   'use strict';
   (function () {
@@ -463,9 +512,10 @@
     const CATEGORIES = ['Medical', 'Childcare', 'Education', 'Activities', 'Clothing', 'Food', 'Travel', 'Other'];
 
     function blankState() {
-      return { seq: 0, parents: { A: 'Parent A', B: 'Parent B' }, children: [], expenses: [], payments: [], locked_months: [], recurring: [] };
+      return { seq: 0, updatedAt: 0, parents: { A: 'Parent A', B: 'Parent B' }, children: [], expenses: [], payments: [], locked_months: [], recurring: [] };
     }
     let state = load();
+    let applyingRemote = false; // guard so pulling from Drive doesn't re-trigger a push
 
     function normalizeExpense(e) {
       return Object.assign({ category: 'Other', child_id: null, notes: null, split_type: 'even', split_value: null, status: 'approved', receipt: null, tax_deductible: false, recurring_id: null }, e);
@@ -487,12 +537,18 @@
         return blankState();
       }
     }
-    function save() {
+    function saveRaw() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       } catch (e) {
         toast('Could not save — storage may be full (large receipts?) or blocked', true);
       }
+    }
+    // Normal save: stamp a new document timestamp and (if connected) queue a push.
+    function save() {
+      if (!applyingRemote) state.updatedAt = Date.now();
+      saveRaw();
+      if (!applyingRemote) scheduleAutoPush();
     }
     function nextId() { state.seq = (state.seq || 0) + 1; return state.seq; }
 
@@ -1430,6 +1486,91 @@
     $('#exportTaxBtn').addEventListener('click', exportTaxCsv);
 
     // ---------------------------------------------------------------------
+    // Cloud sync (Google Drive)
+    // ---------------------------------------------------------------------
+    // Replace local state with a document pulled from Drive, without bumping the
+    // local timestamp (so it doesn't look like a new local edit).
+    function adoptState(obj) {
+      applyingRemote = true;
+      try {
+        state = Object.assign(blankState(), obj, {
+          parents: Object.assign({ A: 'Parent A', B: 'Parent B' }, obj.parents || {}),
+          locked_months: Array.isArray(obj.locked_months) ? obj.locked_months : [],
+          recurring: Array.isArray(obj.recurring) ? obj.recurring : [],
+        });
+        state.expenses = (state.expenses || []).map(normalizeExpense);
+        saveRaw();
+        renderAll();
+      } finally {
+        applyingRemote = false;
+      }
+    }
+
+    function updateSyncUI(st, msg, meta) {
+      const box = $('#syncStatus');
+      const txt = $('#syncStatusText');
+      if (!box) return;
+      box.className = 'sync-status';
+      const when = meta && meta.lastSyncAt ? new Date(meta.lastSyncAt).toLocaleString() : '';
+      let label = 'Not connected';
+      if (st === 'syncing') { box.classList.add('busy'); label = 'Syncing…'; }
+      else if (st === 'synced') { box.classList.add('ok'); label = 'Synced' + (when ? ' · ' + when : ''); }
+      else if (st === 'conflict') { box.classList.add('warn'); label = 'Sync conflict — choose a version'; }
+      else if (st === 'error') { box.classList.add('bad'); label = 'Sync error' + (msg ? ': ' + msg : ''); }
+      else if (st === 'idle') { label = 'Connected' + (when ? ' · last synced ' + when : ' — tap Sync now'); }
+      txt.textContent = label;
+    }
+
+    async function handleSyncResult(r) {
+      if (!r) return;
+      if (r.action === 'conflict') {
+        const keepLocal = confirm('Sync conflict:\n\nThis device and Google Drive were BOTH changed since the last sync.\n\nOK = keep THIS device’s version (upload it to Drive)\nCancel = use Google Drive’s version (download it here)\n\nEither way, a backup of the replaced side is kept in this browser.');
+        await KidLedgerSync.resolveConflict(keepLocal ? 'local' : 'remote');
+        renderAll();
+        toast(keepLocal ? 'Kept this device — uploaded to Drive' : 'Loaded Drive’s version');
+      } else if (r.action === 'pull') { toast('Pulled the latest from Drive'); }
+      else if (r.action === 'push') { toast('Uploaded to Drive'); }
+      else if (r.action === 'create') { toast('Created kidledger.json in your Drive'); }
+    }
+
+    async function doSync(interactive) {
+      try { await handleSyncResult(await KidLedgerSync.syncNow(interactive)); }
+      catch (e) { toast('Sync: ' + e.message, true); }
+    }
+
+    let autoPushTimer;
+    function scheduleAutoPush() {
+      if (!KidLedgerSync.isConnected() || !KidLedgerSync.meta.autosync || !KidLedgerSync.isConfigured()) return;
+      clearTimeout(autoPushTimer);
+      autoPushTimer = setTimeout(() => doSync(false), 1500);
+    }
+
+    KidLedgerSync.init({ getState: () => state, applyRemote: adoptState, onStatus: updateSyncUI });
+    $('#clientIdInput').value = KidLedgerSync.meta.clientId || '';
+    $('#autoSyncToggle').checked = KidLedgerSync.meta.autosync !== false;
+
+    $('#connectDriveBtn').addEventListener('click', async () => {
+      const id = $('#clientIdInput').value.trim();
+      if (id) KidLedgerSync.setClientId(id);
+      if (!KidLedgerSync.isConfigured()) { toast('Enter your Google Client ID first', true); return; }
+      try { await handleSyncResult(await KidLedgerSync.connect()); }
+      catch (e) { toast('Connect: ' + e.message, true); }
+    });
+    $('#syncNowBtn').addEventListener('click', () => {
+      const id = $('#clientIdInput').value.trim();
+      if (id) KidLedgerSync.setClientId(id);
+      doSync(true);
+    });
+    $('#disconnectDriveBtn').addEventListener('click', () => { KidLedgerSync.disconnect(); toast('Disconnected from Drive'); });
+    $('#autoSyncToggle').addEventListener('change', (e) => KidLedgerSync.setAutoSync(e.target.checked));
+    $('#clientIdInput').addEventListener('change', (e) => KidLedgerSync.setClientId(e.target.value));
+
+    // Register the service worker for offline use (only over http/https).
+    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+      window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+    }
+
+    // ---------------------------------------------------------------------
     // Boot
     // ---------------------------------------------------------------------
     $$('input[type="date"]').forEach((i) => { if (!i.value) i.value = todayISO(); });
@@ -1438,6 +1579,11 @@
     const createdOnBoot = generateRecurring();
     renderAll();
     if (createdOnBoot) toast(createdOnBoot + ' recurring expense(s) added for you');
+
+    // Auto-sync on open if already connected.
+    if (KidLedgerSync.isConnected() && KidLedgerSync.meta.autosync && KidLedgerSync.isConfigured()) {
+      setTimeout(() => doSync(false), 900);
+    }
   })();
   </script>
 </body>

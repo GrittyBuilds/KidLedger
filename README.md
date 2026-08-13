@@ -1,20 +1,72 @@
 # 🧾 KidLedger
 
-A single-user, **browser-only** expense tracker for co-parents who split their
-children's expenses **50/50**. One person keeps the ledger: log every expense,
-record settlement payments, watch the running balance, and generate a
-**printable monthly billing statement** for whichever parent owes the other.
+A **browser-only, installable** expense tracker for co-parents who split their
+children's expenses. Log every expense, record settlement payments, watch the
+running balance, and generate a **printable monthly billing statement** for
+whichever parent owes the other.
 
-No server, no database, no accounts. Everything runs in a single HTML file and
-saves to your browser's `localStorage`.
+Runs as an installable app (PWA) on **desktop, iPhone, and Android** from one
+codebase, works **offline**, and can **sync across your devices through your own
+Google Drive**. No server, no accounts, no data sent to anyone but your Drive.
 
-## Use it
+## Two ways to run it
 
-Just open **`index.html`** in any modern browser (double-click it, or drag it
-into a browser tab). That's it — nothing to install or run.
+**1. Quick / local:** open **`index.html`** in any browser (keep `finance.js` and
+`sync.js` in the same folder). Everything works except cross-device sync and
+install-to-home-screen, which need a hosted `https://` address.
 
-> Keep `finance.js` in the same folder as `index.html`; the page loads it for
-> the money math.
+**2. Installed app with cloud sync (recommended):** host the folder as a static
+site (see **Deploying** below), then open that URL on each device and choose
+"Install"/"Add to Home Screen". Connect Google Drive once per device and your
+data follows you.
+
+## Installing on your devices (once it's hosted)
+
+- **Desktop (Chrome/Edge):** click the install icon in the address bar.
+- **Android (Chrome):** menu → *Install app* / *Add to Home screen*.
+- **iPhone/iPad (Safari):** Share → *Add to Home Screen*.
+
+It then opens full-screen like a native app and works offline.
+
+## Deploying (free, via GitHub Pages)
+
+This repo includes a GitHub Actions workflow (`.github/workflows/deploy-pages.yml`)
+that publishes the app automatically:
+
+1. In the repo, go to **Settings → Pages** and set **Source** to **GitHub Actions**.
+2. Push to `main` (or run the workflow manually). Your app goes live at
+   `https://<your-user>.github.io/<repo>/`.
+
+Any static host works too (Netlify, Cloudflare Pages, Vercel) — just serve the
+files at the repo root.
+
+## Syncing across devices with Google Drive
+
+KidLedger stores one private file, `kidledger.json`, in your Google Drive using
+the `drive.file` scope — meaning **the app can only ever see the file it
+created**, never the rest of your Drive. Auth is entirely client-side; there is
+no server and no stored secret.
+
+**One-time setup (get a free Google Client ID):**
+
+1. Open <https://console.cloud.google.com> and create a project.
+2. **APIs & Services → Enable APIs** → enable **Google Drive API**.
+3. **APIs & Services → OAuth consent screen** → **External**; add your app name,
+   your email, and yourself as a **Test user**.
+4. **APIs & Services → Credentials → Create credentials → OAuth client ID** →
+   **Web application**.
+5. Under **Authorized JavaScript origins**, add your hosted address
+   (e.g. `https://<your-user>.github.io`).
+6. Copy the **Client ID**, open KidLedger → **Settings → Sync**, paste it, and
+   click **Connect Google Drive**.
+
+Then on any other device, install the app, paste the same Client ID, and connect —
+it finds your `kidledger.json` and syncs.
+
+**How sync behaves:** it pulls the latest when you open the app and pushes shortly
+after each change. If the same data changed on two devices since the last sync, it
+asks which version to keep (and keeps a backup of the replaced side in the
+browser). The same Client ID and Google account are used on every device.
 
 ## Features
 
@@ -48,6 +100,10 @@ into a browser tab). That's it — nothing to install or run.
 - **Tax-relevant summary** — flag medical/childcare expenses as tax-relevant and
   get a per-year summary (with each parent's responsibility share) for FSA claims
   or tax time. Export it to CSV.
+- **Installable & offline** — install to your home screen / desktop and keep
+  using it with no connection.
+- **Google Drive sync** — keep phone and desktop in sync through a private file
+  in your own Drive.
 - **Backup & restore** — export your whole ledger to a `.json` file and import it
   later (or on another device). Import merges IDs safely so nothing collides.
 - **Configurable** — set both parents' real names and add your children.
@@ -70,24 +126,29 @@ Parent A**.
 
 ## Where your data lives
 
-All data is stored in your browser's `localStorage` under the key
-`kidledger.v1` — it never leaves your device. That means:
+Each device keeps its own copy in the browser's `localStorage` under the key
+`kidledger.v1`. If you connect Google Drive, that copy is also mirrored to a
+private `kidledger.json` in your Drive and synced between your devices.
 
-- **It's private** — nothing is uploaded anywhere.
-- **It's per-browser** — data saved in Chrome won't show up in Safari, and
-  clearing your browsing data can erase it.
+- **It's private** — data goes only to your own Google Drive (or nowhere, if you
+  don't connect sync).
+- **Without sync it's per-browser** — data saved in Chrome won't show up in
+  Safari, and clearing browsing data can erase it.
 
-Because of that, **export a backup regularly** (Settings → Export backup). To
-move your ledger to another computer or browser, export on one and import on the
-other.
+Either way you can **export a backup** anytime (Settings → Export backup).
 
 ## Project layout
 
-| File                   | Purpose                                                     |
-| ---------------------- | ----------------------------------------------------------- |
-| `index.html`           | The entire app — UI, styles, and logic (uses localStorage)  |
-| `finance.js`           | Pure balance & statement math, shared with the tests        |
-| `test/finance.test.js` | Unit tests for the finance logic (run with Node)            |
+| File                        | Purpose                                                    |
+| --------------------------- | ---------------------------------------------------------- |
+| `index.html`                | The entire app — UI, styles, and logic                     |
+| `finance.js`                | Pure balance & statement math, shared with the tests       |
+| `sync.js`                   | Google Drive sync (pure decision logic + Drive API calls)  |
+| `sw.js`                     | Service worker for offline use                             |
+| `manifest.webmanifest`      | PWA manifest (installability)                              |
+| `icons/`                    | App icons                                                  |
+| `.github/workflows/`        | GitHub Pages deploy workflow                               |
+| `test/*.test.js`            | Unit tests for the finance and sync logic (run with Node)  |
 
 ## Running the tests
 
