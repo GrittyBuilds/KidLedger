@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>KidLedger — Shared Expense Tracker</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧾</text></svg>" />
   <link rel="manifest" href="manifest.webmanifest" />
@@ -14,435 +14,581 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <style>
     :root {
-      --bg: #f4f6fb; --surface: #fff; --surface-2: #f8fafc; --ink: #1a2233;
-      --ink-soft: #5b6577; --muted: #8a93a6; --border: #e4e8f0; --brand: #4f46e5;
-      --brand-soft: #eef2ff; --green: #0f9d6b; --green-soft: #e6f6ef; --red: #d64545;
-      --red-soft: #fdecec; --amber: #b7791f; --amber-soft: #fbf3e2;
-      --shadow: 0 1px 3px rgba(20,30,60,.08), 0 8px 24px rgba(20,30,60,.06); --radius: 14px;
+      --bg: #f5f6f9; --surface: #ffffff; --surface-2: #f7f8fb; --surface-3: #eef0f5;
+      --ink: #14161c; --ink-soft: #4a5262; --muted: #949cad; --border: #e7e9f0; --border-2: #dfe2ec;
+      --brand: #4f46e5; --brand-600: #4338ca; --brand-050: #eef1fe; --brand-100: #e0e5fd;
+      --green: #0f9d6b; --green-050: #e7f6ef; --red: #dc4b4b; --red-050: #fdecec;
+      --amber: #b7791f; --amber-050: #fbf3e2; --blue: #1f6fd6; --blue-050: #e7f0fc;
+      --shadow-sm: 0 1px 2px rgba(20,25,45,.06);
+      --shadow: 0 1px 3px rgba(20,25,45,.06), 0 6px 20px rgba(20,25,45,.05);
+      --shadow-lg: 0 10px 40px rgba(20,25,45,.14);
+      --r-sm: 9px; --r: 13px; --r-lg: 18px;
+      --serif: Georgia, 'Times New Roman', serif;
+      --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.5; }
-    h1, h2, h3 { margin: 0; }
-    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: 0; z-index: 20; }
-    .brand { display: flex; align-items: center; gap: 12px; padding: 14px 0; }
-    .brand .logo { font-size: 30px; }
-    .brand h1 { font-size: 20px; letter-spacing: -.02em; }
-    .tagline { margin: 0; font-size: 12.5px; color: var(--muted); }
-    .tabs { display: flex; gap: 4px; flex-wrap: wrap; }
-    .tab { border: none; background: transparent; padding: 10px 14px; border-radius: 9px; font-size: 14px; font-weight: 600; color: var(--ink-soft); cursor: pointer; transition: background .15s, color .15s; }
-    .tab:hover { background: var(--surface-2); }
-    .tab.active { background: var(--brand-soft); color: var(--brand); }
-    main { max-width: 980px; margin: 0 auto; padding: 24px 20px 64px; }
-    .view { display: none; }
-    .view.active { display: block; animation: fade .2s ease; }
-    @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    html, body { height: 100%; }
+    body { margin: 0; font-family: var(--sans); background: var(--bg); color: var(--ink); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
+    a { color: inherit; }
+    [hidden] { display: none !important; }
+
+    /* ---------- App shell ---------- */
+    .app { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 244px; flex: 0 0 244px; background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; padding: 20px 14px; position: sticky; top: 0; height: 100vh;
+    }
+    .brand { display: flex; align-items: center; gap: 11px; padding: 4px 8px 20px; }
+    .brand .logo { width: 38px; height: 38px; border-radius: 11px; background: linear-gradient(135deg,#6d5ef0,#4f46e5); display: grid; place-items: center; font-size: 20px; box-shadow: var(--shadow-sm); }
+    .brand h1 { font-size: 18px; }
+    .brand .tagline { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+    .nav { display: flex; flex-direction: column; gap: 2px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 11px; padding: 10px 12px; border: none; background: transparent;
+      border-radius: var(--r-sm); font: inherit; font-size: 14.5px; font-weight: 600; color: var(--ink-soft);
+      cursor: pointer; text-align: left; width: 100%; transition: background .12s, color .12s;
+    }
+    .nav-item svg { width: 20px; height: 20px; flex: 0 0 auto; opacity: .85; }
+    .nav-item:hover { background: var(--surface-2); color: var(--ink); }
+    .nav-item.active { background: var(--brand-050); color: var(--brand); }
+    .nav-item.active svg { opacity: 1; }
+    .sidebar-foot { margin-top: auto; padding: 12px 10px 2px; font-size: 11.5px; color: var(--muted); border-top: 1px solid var(--border); }
+    .sidebar-foot .sf-sync { display: flex; align-items: center; gap: 7px; font-weight: 600; }
+    .sidebar-foot .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+    .sidebar-foot .dot.ok { background: var(--green); } .sidebar-foot .dot.busy { background: var(--brand); } .sidebar-foot .dot.bad { background: var(--red); } .sidebar-foot .dot.warn { background: var(--amber); }
+
+    .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .mobile-top { display: none; }
+    .content { width: 100%; max-width: 960px; margin: 0 auto; padding: 26px 24px 96px; }
+
+    /* ---------- Bottom nav (mobile) ---------- */
+    .bottom-nav { display: none; }
+    .fab { display: none; }
+
+    /* ---------- Typography / layout helpers ---------- */
+    .page-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
+    .page-head h2 { font-size: 22px; }
+    .page-head .sub { color: var(--muted); font-size: 13.5px; margin-top: 2px; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-    @media (max-width: 760px) { .grid-2 { grid-template-columns: 1fr; } }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; margin-bottom: 18px; }
-    .card h2 { font-size: 16px; }
-    .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
-    .balance-card { background: linear-gradient(135deg, #4f46e5, #6d5ef0); color: #fff; border-radius: var(--radius); padding: 26px 24px; margin-bottom: 18px; box-shadow: var(--shadow); }
-    .balance-card.settled { background: linear-gradient(135deg, #0f9d6b, #17b47c); }
-    .balance-label { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; opacity: .85; }
-    .balance-amount { margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -.02em; }
-    .balance-sub { margin: 6px 0 0; opacity: .9; font-size: 14px; }
-    form.stack { display: flex; flex-direction: column; gap: 12px; }
-    .row { display: flex; gap: 12px; }
-    .row > * { flex: 1; }
-    .row.end { justify-content: flex-end; }
-    .row.end > * { flex: 0 0 auto; }
-    label { display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 600; color: var(--ink-soft); }
-    label.inline { flex-direction: row; align-items: center; gap: 8px; font-weight: 600; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    @media (max-width: 780px) { .grid-2 { grid-template-columns: 1fr; } .grid-3 { grid-template-columns: 1fr; } }
+    .view { display: none; }
+    .view.active { display: block; animation: fade .18s ease; }
+    @keyframes fade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow); padding: 22px; margin-bottom: 18px; }
+    .card.tight { padding: 18px; }
+    .card h2 { font-size: 15.5px; }
+    .card h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; }
+    .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .muted { color: var(--muted); font-size: 13px; }
+
+    /* Balance hero */
+    .hero { border-radius: var(--r-lg); padding: 26px 26px; color: #fff; margin-bottom: 18px; box-shadow: var(--shadow); background: linear-gradient(135deg,#5b53ef,#4f46e5 55%,#4338ca); position: relative; overflow: hidden; }
+    .hero.settled { background: linear-gradient(135deg,#12b07a,#0f9d6b); }
+    .hero::after { content: ''; position: absolute; right: -40px; top: -40px; width: 180px; height: 180px; background: rgba(255,255,255,.08); border-radius: 50%; }
+    .hero .lbl { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; opacity: .82; }
+    .hero .amt { font-size: 34px; font-weight: 700; margin-top: 8px; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+    .hero .who { margin-top: 6px; font-size: 14.5px; opacity: .95; }
+
+    /* Stat tiles */
+    .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    @media (max-width: 720px) { .tiles { grid-template-columns: 1fr 1fr; } }
+    .tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 15px; }
+    .tile .k { font-size: 12px; color: var(--muted); font-weight: 600; }
+    .tile .v { font-size: 20px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+    .tile .d { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+
+    /* Forms */
+    form.stack { display: flex; flex-direction: column; gap: 13px; }
+    .row { display: flex; gap: 12px; } .row > * { flex: 1; } .row.end { justify-content: flex-end; } .row.end > * { flex: 0 0 auto; }
+    label { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+    label.inline { flex-direction: row; align-items: center; gap: 9px; }
     label.inline input { width: auto; }
-    input, select { font: inherit; padding: 9px 11px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); color: var(--ink); font-weight: 500; }
-    input:focus, select:focus { outline: 2px solid var(--brand-soft); border-color: var(--brand); }
-    .btn { font: inherit; font-weight: 600; padding: 10px 16px; border-radius: 9px; border: 1px solid transparent; cursor: pointer; transition: transform .05s, filter .15s, background .15s; }
+    input, select, textarea { font: inherit; font-size: 14px; padding: 10px 12px; border: 1px solid var(--border-2); border-radius: var(--r-sm); background: var(--surface); color: var(--ink); font-weight: 500; width: 100%; transition: border-color .12s, box-shadow .12s; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-050); }
+    select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23949cad' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 11px center; padding-right: 30px; }
+
+    .btn { font: inherit; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: var(--r-sm); border: 1px solid transparent; cursor: pointer; transition: transform .05s, filter .12s, background .12s; white-space: nowrap; }
     .btn:active { transform: translateY(1px); }
     .btn.primary { background: var(--brand); color: #fff; }
-    .btn.primary:hover { filter: brightness(1.07); }
-    .btn.ghost { background: transparent; border-color: var(--border); color: var(--ink-soft); }
+    .btn.primary:hover { background: var(--brand-600); }
+    .btn.ghost { background: var(--surface); border-color: var(--border-2); color: var(--ink-soft); }
     .btn.ghost:hover { background: var(--surface-2); }
-    .btn.danger { background: var(--red-soft); color: var(--red); border-color: transparent; }
-    .icon-btn { border: none; background: transparent; font-size: 16px; cursor: pointer; color: var(--muted); }
+    .btn.danger { background: var(--red-050); color: var(--red); }
+    .btn.sm { padding: 7px 12px; font-size: 13px; }
+    .icon-btn { border: none; background: transparent; font-size: 16px; cursor: pointer; color: var(--muted); padding: 4px; border-radius: 6px; }
+    .icon-btn:hover { background: var(--surface-2); color: var(--ink); }
     .link { color: var(--brand); font-weight: 600; font-size: 13px; cursor: pointer; text-decoration: none; }
-    .muted { color: var(--muted); font-size: 13.5px; }
+
+    /* Lists */
     .list { display: flex; flex-direction: column; }
-    .list-item { display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--border); }
-    .list-item:last-child { border-bottom: none; }
-    .list-item .li-main { flex: 1; min-width: 0; }
-    .li-title { font-weight: 600; font-size: 14px; }
-    .li-sub { font-size: 12.5px; color: var(--muted); }
-    .li-amount { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--brand-soft); color: var(--brand); white-space: nowrap; }
-    .pill.a { background: #e0f0ff; color: #1266b3; }
-    .pill.b { background: #fdeede; color: #b7791f; }
-    .pill.pay { background: var(--green-soft); color: var(--green); }
-    .pill.warn { background: var(--red-soft); color: var(--red); }
+    .li { display: flex; align-items: center; gap: 13px; padding: 13px 2px; border-bottom: 1px solid var(--border); }
+    .li:last-child { border-bottom: none; }
+    .li .main { flex: 1; min-width: 0; }
+    .li .t { font-weight: 600; font-size: 14px; }
+    .li .s { font-size: 12px; color: var(--muted); margin-top: 1px; }
+    .li .amt { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .avatar { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-weight: 700; font-size: 13px; flex: 0 0 auto; }
+    .avatar.a { background: var(--blue-050); color: var(--blue); } .avatar.b { background: var(--amber-050); color: var(--amber); } .avatar.pay { background: var(--green-050); color: var(--green); } .avatar.adj { background: var(--brand-050); color: var(--brand); }
+
+    .pill { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--surface-3); color: var(--ink-soft); white-space: nowrap; }
+    .pill.a { background: var(--blue-050); color: var(--blue); } .pill.b { background: var(--amber-050); color: var(--amber); }
+    .pill.pay { background: var(--green-050); color: var(--green); } .pill.warn { background: var(--red-050); color: var(--red); }
     .pill.tiny { font-size: 10px; padding: 1px 7px; }
-    .glance { display: flex; flex-direction: column; gap: 10px; }
-    .glance-row { display: flex; justify-content: space-between; font-size: 14px; padding: 6px 0; border-bottom: 1px dashed var(--border); }
+
+    .glance { display: flex; flex-direction: column; }
+    .glance-row { display: flex; justify-content: space-between; font-size: 13.5px; padding: 9px 0; border-bottom: 1px dashed var(--border); }
     .glance-row:last-child { border-bottom: none; }
-    .glance-row .g-val { font-weight: 700; font-variant-numeric: tabular-nums; }
-    .table-wrap { overflow-x: auto; }
+    .glance-row .gv { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; margin: 0 -4px; }
     table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-    th, td { text-align: left; padding: 10px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
-    th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+    th, td { text-align: left; padding: 11px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 700; }
     td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-    tr:hover td { background: var(--surface-2); }
-    .filters { display: flex; align-items: flex-end; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
-    .filters label { font-size: 12px; }
-    .filters input, .filters select { padding: 7px 9px; }
-    .filters .grow { flex: 1 1 180px; }
+    tbody tr:hover td { background: var(--surface-2); }
+
+    /* Filters */
+    .filters { display: flex; align-items: flex-end; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+    .filters label { font-size: 11.5px; }
+    .filters .grow { flex: 1 1 200px; }
+    .summary-bar { display: flex; gap: 16px; padding: 10px 2px 14px; color: var(--ink-soft); font-size: 13px; font-weight: 600; flex-wrap: wrap; }
+    .summary-bar b { color: var(--ink); }
     .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-    .mini-btn { font-size: 12px; padding: 4px 9px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; color: var(--ink-soft); }
-    .mini-btn:hover { background: var(--surface-2); }
-    .mini-btn.danger { color: var(--red); }
-    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-    .chip { display: inline-flex; align-items: center; gap: 8px; background: var(--surface-2); border: 1px solid var(--border); padding: 6px 8px 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; }
-    .chip button { border: none; background: transparent; cursor: pointer; color: var(--muted); font-size: 14px; }
-    .breakdown { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    @media (max-width: 620px) { .breakdown { grid-template-columns: 1fr; } }
-    .bd-title { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 6px; }
-    .bd-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border); font-size: 13.5px; }
-    .bd-row:last-child { border-bottom: none; }
-    .bd-row .v { font-weight: 700; font-variant-numeric: tabular-nums; }
-    .split-fields { border: 1px dashed var(--border); border-radius: 10px; padding: 12px; background: var(--surface-2); display: flex; flex-direction: column; gap: 10px; }
-    .split-preview { font-size: 13px; font-weight: 600; color: var(--brand); }
-    .receipt-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .receipt-body img, .receipt-body iframe { width: 100%; border: 1px solid var(--border); border-radius: 10px; }
-    .receipt-body iframe { height: 70vh; }
-    .statement-controls { display: flex; gap: 8px; flex-wrap: wrap; }
-    .stmt { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 34px; }
-    .stmt-head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--ink); padding-bottom: 16px; margin-bottom: 20px; }
-    .stmt-head h2 { font-size: 22px; letter-spacing: -.02em; }
-    .stmt-head .stmt-brand { font-size: 13px; color: var(--muted); }
-    .stmt-period { text-align: right; }
-    .stmt-period .big { font-size: 18px; font-weight: 700; }
-    .lock-badge { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--green-soft); color: var(--green); }
-    .stmt-section-title { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 22px 0 8px; }
-    .stmt-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px; }
-    .stmt-summary .box { border: 1px solid var(--border); border-radius: 10px; padding: 14px; background: var(--surface-2); }
-    .stmt-summary .box .k { font-size: 12px; color: var(--muted); }
-    .stmt-summary .box .v { font-size: 18px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
-    .stmt-total-line { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
-    .stmt-callout { margin-top: 18px; padding: 16px 18px; border-radius: 10px; background: var(--brand-soft); color: var(--brand); font-size: 16px; font-weight: 700; }
-    .stmt-callout.settled { background: var(--green-soft); color: var(--green); }
-    .stmt-note { margin-top: 14px; padding: 12px 14px; border-radius: 10px; background: var(--amber-soft); color: var(--amber); font-size: 13px; font-weight: 600; }
-    .empty { padding: 26px; text-align: center; color: var(--muted); font-size: 14px; }
-    .modal-backdrop { position: fixed; inset: 0; background: rgba(20,30,60,.45); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 40; }
-    .modal { width: 100%; max-width: 520px; margin: 0; max-height: 92vh; overflow-y: auto; }
-    .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow); z-index: 60; max-width: 90vw; }
-    .toast.err { background: var(--red); }
+    .mini { font-size: 12px; padding: 5px 10px; border-radius: 7px; border: 1px solid var(--border-2); background: var(--surface); cursor: pointer; color: var(--ink-soft); font-weight: 600; }
+    .mini:hover { background: var(--surface-2); } .mini.danger { color: var(--red); }
+
+    /* Chips */
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    .chip { display: inline-flex; align-items: center; gap: 8px; background: var(--surface-2); border: 1px solid var(--border-2); padding: 6px 8px 6px 13px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+    .chip button { border: none; background: transparent; cursor: pointer; color: var(--muted); font-size: 14px; line-height: 1; }
+    .chip button:hover { color: var(--red); }
+
     /* Charts */
     .chart-bars { display: flex; align-items: flex-end; gap: 12px; padding: 8px 0 0; }
-    .cbar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
-    .cbar-wrap { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; height: 168px; }
-    .cbar { width: 72%; max-width: 48px; background: linear-gradient(180deg, #6d5ef0, #4f46e5); border-radius: 5px 5px 0 0; min-height: 2px; transition: filter .15s; }
+    .cbar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 7px; min-width: 0; }
+    .cbar-wrap { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 5px; height: 160px; }
+    .cbar { width: 68%; max-width: 46px; background: linear-gradient(180deg,#6d5ef0,#4f46e5); border-radius: 6px 6px 0 0; min-height: 3px; transition: filter .12s; }
     .cbar:hover { filter: brightness(1.1); }
-    .cbar-val { font-size: 11px; font-weight: 700; color: var(--ink-soft); white-space: nowrap; font-variant-numeric: tabular-nums; }
-    .cbar-x { font-size: 11px; color: var(--muted); white-space: nowrap; }
-    .hbars { display: flex; flex-direction: column; gap: 10px; }
-    .hbar-row { display: grid; grid-template-columns: 130px 1fr auto; align-items: center; gap: 10px; font-size: 13px; }
+    .cbar-val { font-size: 11px; font-weight: 700; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+    .cbar-x { font-size: 11px; color: var(--muted); }
+    .hbars { display: flex; flex-direction: column; gap: 11px; }
+    .hbar-row { display: grid; grid-template-columns: 130px 1fr auto; align-items: center; gap: 12px; font-size: 13px; }
     .hbar-label { color: var(--ink-soft); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .hbar-track { background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; height: 16px; overflow: hidden; }
-    .hbar-fill { height: 100%; background: linear-gradient(90deg, #4f46e5, #6d5ef0); border-radius: 6px; min-width: 2px; }
+    .hbar-track { background: var(--surface-3); border-radius: 6px; height: 15px; overflow: hidden; }
+    .hbar-fill { height: 100%; background: linear-gradient(90deg,#4f46e5,#6d5ef0); border-radius: 6px; min-width: 3px; }
     .hbar-val { font-weight: 700; font-variant-numeric: tabular-nums; }
-    @media (max-width: 520px) { .hbar-row { grid-template-columns: 90px 1fr auto; } }
+    @media (max-width: 520px) { .hbar-row { grid-template-columns: 96px 1fr auto; } }
+
+    .rec-item, .li { }
+    .rec-item.paused { opacity: .6; }
+
     /* Sync */
-    .sync-status { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 10px; font-size: 13px; font-weight: 600; background: var(--surface-2); border: 1px solid var(--border); color: var(--ink-soft); margin-bottom: 12px; }
-    .sync-status .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: 0 0 auto; }
-    .sync-status.ok { background: var(--green-soft); color: var(--green); border-color: transparent; }
-    .sync-status.ok .dot { background: var(--green); }
-    .sync-status.busy { background: var(--brand-soft); color: var(--brand); border-color: transparent; }
-    .sync-status.busy .dot { background: var(--brand); }
-    .sync-status.bad { background: var(--red-soft); color: var(--red); border-color: transparent; }
-    .sync-status.bad .dot { background: var(--red); }
-    .sync-status.warn { background: var(--amber-soft); color: var(--amber); border-color: transparent; }
-    .sync-status.warn .dot { background: var(--amber); }
+    .sync-status { display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px; border-radius: var(--r-sm); font-size: 13px; font-weight: 600; background: var(--surface-2); border: 1px solid var(--border-2); color: var(--ink-soft); margin-bottom: 12px; }
+    .sync-status .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+    .sync-status.ok { background: var(--green-050); color: var(--green); border-color: transparent; } .sync-status.ok .dot { background: var(--green); }
+    .sync-status.busy { background: var(--brand-050); color: var(--brand); border-color: transparent; } .sync-status.busy .dot { background: var(--brand); }
+    .sync-status.bad { background: var(--red-050); color: var(--red); border-color: transparent; } .sync-status.bad .dot { background: var(--red); }
+    .sync-status.warn { background: var(--amber-050); color: var(--amber); border-color: transparent; } .sync-status.warn .dot { background: var(--amber); }
     details.help { margin-top: 12px; font-size: 13px; }
     details.help summary { cursor: pointer; font-weight: 600; color: var(--brand); }
-    details.help ol { margin: 10px 0 0; padding-left: 20px; color: var(--ink-soft); line-height: 1.7; }
+    details.help ol { margin: 10px 0 0; padding-left: 20px; color: var(--ink-soft); line-height: 1.75; }
     details.help code { background: var(--surface-2); border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px; font-size: 12px; }
-    /* Recurring cards */
-    .rec-item { display: flex; align-items: center; gap: 12px; padding: 14px 4px; border-bottom: 1px solid var(--border); }
-    .rec-item:last-child { border-bottom: none; }
-    .rec-item.paused { opacity: .6; }
-    .rec-main { flex: 1; min-width: 0; }
-    [hidden] { display: none !important; }
+
+    .split-fields { border: 1px dashed var(--border-2); border-radius: var(--r); padding: 13px; background: var(--surface-2); display: flex; flex-direction: column; gap: 11px; }
+    .split-preview { font-size: 13px; font-weight: 700; color: var(--brand); }
+    .receipt-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .receipt-body img, .receipt-body iframe { width: 100%; border: 1px solid var(--border); border-radius: var(--r); }
+    .receipt-body iframe { height: 68vh; }
+    .empty { padding: 30px; text-align: center; color: var(--muted); font-size: 14px; }
+
+    /* Modals & sheets */
+    .backdrop { position: fixed; inset: 0; background: rgba(18,22,40,.5); display: flex; align-items: center; justify-content: center; padding: 18px; z-index: 50; animation: fade .15s ease; }
+    .modal { width: 100%; max-width: 520px; margin: 0; max-height: 92vh; overflow-y: auto; }
+    .sheet { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-radius: 20px 20px 0 0; padding: 10px 12px calc(18px + env(safe-area-inset-bottom)); box-shadow: var(--shadow-lg); z-index: 55; animation: slideup .2s ease; }
+    @keyframes slideup { from { transform: translateY(100%); } to { transform: none; } }
+    .sheet .grab { width: 40px; height: 4px; border-radius: 2px; background: var(--border-2); margin: 6px auto 10px; }
+    .sheet .nav-item { font-size: 15.5px; padding: 13px 14px; }
+
+    .toast { position: fixed; bottom: calc(22px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 11px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow-lg); z-index: 80; max-width: 92vw; text-align: center; }
+    .toast.err { background: var(--red); }
+
+    /* ---------- Statement (invoice) ---------- */
+    .stmt { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow); padding: 40px 42px; }
+    .stmt-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; padding-bottom: 22px; border-bottom: 2px solid var(--ink); }
+    .stmt-mark { display: flex; align-items: center; gap: 11px; }
+    .stmt-mark .m { width: 40px; height: 40px; border-radius: 11px; background: linear-gradient(135deg,#6d5ef0,#4f46e5); display: grid; place-items: center; font-size: 21px; }
+    .stmt-mark .n { font-family: var(--serif); font-size: 21px; font-weight: 700; letter-spacing: -.01em; }
+    .stmt-mark .p { font-size: 12px; color: var(--muted); margin-top: 1px; }
+    .stmt-title { text-align: right; }
+    .stmt-title .h { font-family: var(--serif); font-size: 26px; font-weight: 700; letter-spacing: -.01em; }
+    .stmt-title .period { font-size: 13.5px; color: var(--ink-soft); margin-top: 3px; font-weight: 600; }
+    .stmt-title .date { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .stmt-badge { display: inline-block; margin-top: 8px; padding: 3px 11px; border-radius: 999px; font-size: 11.5px; font-weight: 700; background: var(--green-050); color: var(--green); }
+    .stmt-parties { display: flex; gap: 40px; padding: 20px 0 6px; font-size: 13.5px; }
+    .stmt-parties .k { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; }
+    .stmt-parties .v { font-weight: 600; margin-top: 3px; }
+    .stmt-tiles { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin: 18px 0 6px; }
+    @media (max-width: 640px) { .stmt-tiles { grid-template-columns: 1fr 1fr; } }
+    .stmt-tile { border: 1px solid var(--border); border-radius: var(--r); padding: 13px 14px; background: var(--surface-2); }
+    .stmt-tile .k { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .stmt-tile .v { font-size: 18px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+    .stmt-sec { font-family: var(--serif); font-size: 15px; font-weight: 700; margin: 26px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+    .stmt-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+    @media (max-width: 640px) { .stmt-2col { grid-template-columns: 1fr; gap: 8px; } }
+    .stmt-recon { margin-top: 8px; }
+    .stmt-recon .l { display: flex; justify-content: space-between; padding: 9px 0; font-size: 14px; border-bottom: 1px dashed var(--border); }
+    .stmt-recon .l.total { border-bottom: none; border-top: 2px solid var(--ink); margin-top: 6px; padding-top: 13px; font-weight: 700; font-size: 16px; }
+    .stmt-due { margin-top: 22px; border-radius: var(--r); padding: 20px 22px; background: var(--brand-050); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .stmt-due.settled { background: var(--green-050); }
+    .stmt-due .dl { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; color: var(--brand); }
+    .stmt-due.settled .dl { color: var(--green); }
+    .stmt-due .dv { font-family: var(--serif); font-size: 26px; font-weight: 700; color: var(--brand); font-variant-numeric: tabular-nums; }
+    .stmt-due.settled .dv { color: var(--green); font-size: 20px; }
+    .stmt-due .dw { font-size: 13px; color: var(--ink-soft); font-weight: 600; }
+    .stmt-note { margin-top: 16px; padding: 12px 15px; border-radius: var(--r); background: var(--amber-050); color: var(--amber); font-size: 13px; font-weight: 600; }
+    .stmt-foot { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+
+    /* ---------- Responsive: mobile ---------- */
+    @media (max-width: 860px) {
+      .sidebar { display: none; }
+      .mobile-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; position: sticky; top: 0; z-index: 30; background: rgba(255,255,255,.9); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); padding: 12px 16px calc(12px); }
+      .mobile-top .mbrand { display: flex; align-items: center; gap: 9px; font-weight: 700; }
+      .mobile-top .mbrand .logo { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg,#6d5ef0,#4f46e5); display: grid; place-items: center; font-size: 16px; }
+      .content { padding: 18px 16px 96px; }
+      .bottom-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 40; background: rgba(255,255,255,.94); backdrop-filter: blur(12px); border-top: 1px solid var(--border); padding: 8px 6px calc(8px + env(safe-area-inset-bottom)); justify-content: space-around; }
+      .bnav { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; border: none; background: transparent; color: var(--muted); font: inherit; font-size: 10.5px; font-weight: 600; cursor: pointer; padding: 3px 2px; }
+      .bnav svg { width: 23px; height: 23px; }
+      .bnav.active { color: var(--brand); }
+      .fab { display: grid; place-items: center; position: fixed; right: 18px; bottom: calc(74px + env(safe-area-inset-bottom)); width: 54px; height: 54px; border-radius: 17px; background: var(--brand); color: #fff; border: none; box-shadow: var(--shadow-lg); z-index: 41; cursor: pointer; }
+      .fab svg { width: 26px; height: 26px; }
+      .page-head h2 { font-size: 20px; }
+      .stmt { padding: 24px 20px; }
+      .stmt-top { flex-direction: column; gap: 14px; } .stmt-title { text-align: left; }
+    }
+
+    /* ---------- Print ---------- */
     @media print {
-      .topbar, .no-print, .toast { display: none !important; }
-      body { background: #fff; }
-      main { max-width: none; padding: 0; }
+      .sidebar, .mobile-top, .bottom-nav, .fab, .no-print, .toast { display: none !important; }
+      body, .app, .main { background: #fff; display: block; }
+      .content { max-width: none; padding: 0; }
       .view { display: none !important; }
       .view#view-statement { display: block !important; }
       .stmt { border: none; box-shadow: none; padding: 0; }
-      @page { margin: 18mm; }
+      @page { margin: 16mm; }
     }
   </style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <span class="logo">🧾</span>
-      <div>
-        <h1>KidLedger</h1>
-        <p class="tagline">Shared expenses, fairly split</p>
+  <div class="app">
+    <!-- Sidebar (desktop) -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">🧾</div>
+        <div><h1>KidLedger</h1><div class="tagline">Shared expenses, done fairly</div></div>
+      </div>
+      <nav class="nav" id="sideNav">
+        <button class="nav-item active" data-view="dashboard"><span>Dashboard</span></button>
+        <button class="nav-item" data-view="expenses"><span>Expenses</span></button>
+        <button class="nav-item" data-view="payments"><span>Payments</span></button>
+        <button class="nav-item" data-view="recurring"><span>Recurring</span></button>
+        <button class="nav-item" data-view="reports"><span>Reports</span></button>
+        <button class="nav-item" data-view="statement"><span>Statement</span></button>
+        <button class="nav-item" data-view="settings"><span>Settings</span></button>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="sf-sync"><span class="dot" id="sideDot"></span><span id="sideSync">Local only</span></div>
+        <div style="margin-top:6px;">KidLedger · v3</div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <div class="mobile-top">
+        <div class="mbrand"><div class="logo">🧾</div><span id="mobileTitle">Dashboard</span></div>
+        <button class="icon-btn" id="mobileSettings" aria-label="Settings" data-view="settings">⚙️</button>
+      </div>
+
+      <div class="content" id="content">
+        <!-- Dashboard -->
+        <section class="view active" id="view-dashboard">
+          <div class="hero" id="hero">
+            <div class="lbl">Current balance</div>
+            <div class="amt" id="balanceText">…</div>
+            <div class="who" id="balanceSub"></div>
+          </div>
+          <div class="tiles" id="dashTiles"></div>
+          <div class="grid-2" style="margin-top:18px;">
+            <div class="card">
+              <div class="card-head"><h2>Quick add expense</h2><span class="pill">50/50</span></div>
+              <form id="quickExpenseForm" class="stack">
+                <div class="row">
+                  <label>Date<input type="date" name="date" required /></label>
+                  <label>Amount<input type="number" name="amount" step="0.01" min="0.01" placeholder="0.00" required /></label>
+                </div>
+                <label>Description<input type="text" name="description" placeholder="e.g. Doctor visit copay" required /></label>
+                <div class="row">
+                  <label>Category<select name="category" id="catQuick"></select></label>
+                  <label>For<select name="child_id" id="childQuick"></select></label>
+                </div>
+                <label>Paid by<select name="paid_by" id="paidByQuick"></select></label>
+                <button type="submit" class="btn primary">Add expense</button>
+                <p class="muted">Custom split, receipt, or dispute? Use <a class="link" data-view="expenses" role="button">＋ New expense</a>.</p>
+              </form>
+            </div>
+            <div class="card">
+              <div class="card-head"><h2>This month</h2></div>
+              <div id="monthGlance" class="glance"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Recent activity</h2><a class="link" data-view="expenses" role="button">View all</a></div>
+            <div id="recentList" class="list"></div>
+          </div>
+        </section>
+
+        <!-- Expenses -->
+        <section class="view" id="view-expenses">
+          <div class="page-head">
+            <div><h2>Expenses</h2><div class="sub">Every expense is assigned to a child or marked shared.</div></div>
+            <button class="btn primary" id="newExpenseBtn">＋ New expense</button>
+          </div>
+          <div class="card">
+            <div class="filters">
+              <label class="grow">Search<input type="search" id="fSearch" placeholder="Description, notes, category…" /></label>
+              <label>Month<input type="month" id="fMonth" /></label>
+              <label>Category<select id="fCategory"></select></label>
+              <label>For<select id="fChild"></select></label>
+              <label>Paid by<select id="fPaidBy"></select></label>
+              <label>Status<select id="fStatus"></select></label>
+              <button class="btn ghost sm" id="fClear">Clear</button>
+              <button class="btn ghost sm" id="exportCsvBtn">⬇ CSV</button>
+            </div>
+            <div class="summary-bar" id="expSummary"></div>
+            <div id="expenseTable" class="table-wrap"></div>
+          </div>
+        </section>
+
+        <!-- Payments -->
+        <section class="view" id="view-payments">
+          <div class="page-head"><div><h2>Payments &amp; rollover</h2><div class="sub">Settlement payments and manual balance adjustments.</div></div></div>
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head"><h2>Record a settlement payment</h2></div>
+              <p class="muted" style="margin-top:-8px;margin-bottom:14px;">When one parent pays the other to settle up.</p>
+              <form id="paymentForm" class="stack">
+                <div class="row">
+                  <label>Date<input type="date" name="date" required /></label>
+                  <label>Amount<input type="number" name="amount" step="0.01" min="0.01" placeholder="0.00" required /></label>
+                </div>
+                <div class="row">
+                  <label>From<select name="from_parent" id="payFrom"></select></label>
+                  <label>To<select name="to_parent" id="payTo"></select></label>
+                </div>
+                <div class="row">
+                  <label>Allocate to<select name="child_id" id="payChild"></select></label>
+                  <label>Method<input type="text" name="method" placeholder="Venmo, check…" /></label>
+                </div>
+                <label>Notes<input type="text" name="notes" placeholder="Optional" /></label>
+                <button type="submit" class="btn primary">Record payment</button>
+              </form>
+            </div>
+            <div class="card">
+              <div class="card-head"><h2>Add adjustment / rollover</h2></div>
+              <p class="muted" style="margin-top:-8px;margin-bottom:14px;">An opening balance, an agreed credit, or a correction.</p>
+              <form id="adjustmentForm" class="stack">
+                <div class="row">
+                  <label>Date<input type="date" name="date" required /></label>
+                  <label>Amount<input type="number" name="amount" step="0.01" min="0.01" placeholder="0.00" required /></label>
+                </div>
+                <label>Description<input type="text" name="label" placeholder="e.g. Opening balance" required /></label>
+                <div class="row">
+                  <label>Owed to<select name="favor" id="adjFavor"></select></label>
+                  <label>Allocate to<select name="child_id" id="adjChild"></select></label>
+                </div>
+                <label>Notes<input type="text" name="notes" placeholder="Optional" /></label>
+                <button type="submit" class="btn primary">Add adjustment</button>
+              </form>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>History</h2></div>
+            <div id="ledgerList" class="list"></div>
+          </div>
+        </section>
+
+        <!-- Recurring -->
+        <section class="view" id="view-recurring">
+          <div class="page-head"><div><h2>Recurring expenses</h2><div class="sub">Monthly costs added automatically each month.</div></div></div>
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head"><h2>New recurring expense</h2></div>
+              <form id="recurringForm" class="stack">
+                <label>Description<input type="text" name="description" placeholder="e.g. After-school care" required /></label>
+                <div class="row">
+                  <label>Amount<input type="number" name="amount" step="0.01" min="0.01" required /></label>
+                  <label>Day of month<input type="number" name="day" min="1" max="31" value="1" required /></label>
+                </div>
+                <div class="row">
+                  <label>Category<select name="category" id="catRec"></select></label>
+                  <label>For<select name="child_id" id="childRec"></select></label>
+                </div>
+                <label>Paid by<select name="paid_by" id="paidByRec"></select></label>
+                <div class="split-fields">
+                  <label>Split<select name="split_type" id="splitTypeRec">
+                    <option value="even">Even (50/50)</option>
+                    <option value="percent">By percentage</option>
+                    <option value="amount">By dollar amount</option>
+                    <option value="full">One parent pays 100%</option>
+                  </select></label>
+                  <label id="recPercentWrap" hidden><span id="recPercentLabel">Parent A's share (%)</span><input type="number" name="split_percent" min="0" max="100" step="1" placeholder="50" /></label>
+                  <label id="recAmountWrap" hidden><span id="recAmountLabel">Parent A's share ($)</span><input type="number" name="split_amount" min="0" step="0.01" placeholder="0.00" /></label>
+                  <label id="recFullWrap" hidden>Responsible parent<select name="split_full" id="splitFullRec"></select></label>
+                </div>
+                <div class="row">
+                  <label>Starts<input type="month" name="start_month" required /></label>
+                  <label>Ends (optional)<input type="month" name="end_month" /></label>
+                </div>
+                <label class="inline"><input type="checkbox" name="tax_deductible" id="recTax" /> Tax-relevant (medical / childcare)</label>
+                <button type="submit" class="btn primary">Add recurring expense</button>
+              </form>
+            </div>
+            <div class="card">
+              <div class="card-head"><h2>Your recurring expenses</h2></div>
+              <div id="recurringList" class="list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Reports -->
+        <section class="view" id="view-reports">
+          <div class="page-head">
+            <div><h2>Reports</h2><div class="sub">Where the money goes, by month, child, and category.</div></div>
+            <label style="flex-direction:row;align-items:center;gap:8px;">Range<select id="reportRange" style="width:auto;">
+              <option value="all">All time</option><option value="year">This year</option><option value="month">This month</option>
+            </select></label>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Monthly spending</h2></div>
+            <div id="chartMonthly" class="chart-bars"></div>
+          </div>
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head"><h2>By child</h2><button class="btn ghost sm" id="exportChildBtn">⬇ CSV</button></div>
+              <div id="reportChild"></div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h2>By category</h2><button class="btn ghost sm" id="exportCatBtn">⬇ CSV</button></div>
+              <div id="reportCategory"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Tax-relevant summary</h2><button class="btn ghost sm" id="exportTaxBtn">⬇ CSV</button></div>
+            <p class="muted" style="margin-top:-8px;margin-bottom:12px;">Approved expenses flagged tax-relevant, by year, with each parent's share.</p>
+            <div id="taxSummary" class="table-wrap"></div>
+          </div>
+        </section>
+
+        <!-- Statement -->
+        <section class="view" id="view-statement">
+          <div class="page-head no-print">
+            <div><h2>Billing statement</h2><div class="sub">A professional monthly statement, ready to print or save as PDF.</div></div>
+            <div class="row" style="flex:0 0 auto;gap:8px;flex-wrap:wrap;">
+              <input type="month" id="statementMonth" style="width:auto;" />
+              <button class="btn primary sm" id="loadStatementBtn">Generate</button>
+              <button class="btn ghost sm" id="lockStatementBtn">Finalize</button>
+              <button class="btn ghost sm" id="printStatementBtn">Print / PDF</button>
+            </div>
+          </div>
+          <div id="statementOutput"></div>
+        </section>
+
+        <!-- Settings -->
+        <section class="view" id="view-settings">
+          <div class="page-head"><div><h2>Settings</h2><div class="sub">Parents, children, categories, sync, and backups.</div></div></div>
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head"><h2>Parent names</h2></div>
+              <form id="settingsForm" class="stack">
+                <label>Parent A<input type="text" name="parent_a_name" required /></label>
+                <label>Parent B<input type="text" name="parent_b_name" required /></label>
+                <button type="submit" class="btn primary">Save names</button>
+              </form>
+            </div>
+            <div class="card">
+              <div class="card-head"><h2>Children</h2></div>
+              <form id="childForm" class="row" style="align-items:flex-end;">
+                <label class="grow" style="flex:1;">Name<input type="text" name="name" placeholder="Child's name" required /></label>
+                <button type="submit" class="btn primary">Add</button>
+              </form>
+              <div id="childList" class="chips"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Categories</h2></div>
+            <p class="muted" style="margin-top:-8px;margin-bottom:12px;">Add or remove expense categories. Existing expenses keep their label even if a category is removed.</p>
+            <form id="categoryForm" class="row" style="align-items:flex-end;max-width:420px;">
+              <label class="grow" style="flex:1;">New category<input type="text" name="name" placeholder="e.g. Sports" required /></label>
+              <button type="submit" class="btn primary">Add</button>
+            </form>
+            <div id="categoryList" class="chips"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Sync across devices — Google Drive</h2></div>
+            <p class="muted" style="margin-top:-8px;margin-bottom:12px;">Keep phone and desktop in sync via a private <code>kidledger.json</code> in your own Drive (the app can't see anything else in your Drive).</p>
+            <div id="syncStatus" class="sync-status"><span class="dot"></span><span id="syncStatusText">Not connected</span></div>
+            <form id="syncForm" class="stack" autocomplete="off">
+              <label>Google Client ID<input type="text" id="clientIdInput" placeholder="1234-abc.apps.googleusercontent.com" /></label>
+              <div class="row" style="flex-wrap:wrap;">
+                <button type="button" class="btn primary" id="connectDriveBtn">Connect Google Drive</button>
+                <button type="button" class="btn ghost" id="syncNowBtn">Sync now</button>
+                <button type="button" class="btn ghost" id="disconnectDriveBtn">Disconnect</button>
+              </div>
+              <label class="inline"><input type="checkbox" id="autoSyncToggle" checked /> Auto-sync on open and after changes</label>
+            </form>
+            <details class="help">
+              <summary>One-time setup — how to get a Google Client ID</summary>
+              <ol>
+                <li>Go to <code>console.cloud.google.com</code> and create a project.</li>
+                <li>APIs &amp; Services → <b>Enable APIs</b> → enable <b>Google Drive API</b>.</li>
+                <li>OAuth consent screen → <b>External</b>; add yourself as a <b>Test user</b>.</li>
+                <li>Credentials → <b>Create credentials → OAuth client ID → Web application</b>.</li>
+                <li>Add your site to <b>Authorized JavaScript origins</b> (e.g. <code>https://YOURNAME.github.io</code>).</li>
+                <li>Copy the <b>Client ID</b>, paste it above, click <b>Connect</b>.</li>
+              </ol>
+            </details>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Backup &amp; data</h2></div>
+            <p class="muted" style="margin-top:-8px;margin-bottom:12px;">Export a backup regularly so you never lose your history.</p>
+            <div class="row" style="flex-wrap:wrap;">
+              <button class="btn ghost" id="exportBtn">⬇ Export backup (.json)</button>
+              <button class="btn ghost" id="importBtn">⬆ Import backup</button>
+              <input type="file" id="importFile" accept="application/json,.json" hidden />
+              <button class="btn danger" id="clearBtn">Clear all data</button>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
-    <nav class="tabs" id="tabs">
-      <button class="tab active" data-view="dashboard">Dashboard</button>
-      <button class="tab" data-view="expenses">Expenses</button>
-      <button class="tab" data-view="payments">Payments</button>
-      <button class="tab" data-view="recurring">Recurring</button>
-      <button class="tab" data-view="statement">Statement</button>
-      <button class="tab" data-view="reports">Reports</button>
-      <button class="tab" data-view="settings">Settings</button>
-    </nav>
-  </header>
+  </div>
 
-  <main id="app">
-    <!-- Dashboard -->
-    <section class="view active" id="view-dashboard">
-      <div class="balance-card" id="balanceCard">
-        <p class="balance-label">Current balance</p>
-        <p class="balance-amount" id="balanceText">Loading…</p>
-        <p class="balance-sub" id="balanceSub"></p>
-      </div>
-      <div class="grid-2">
-        <div class="card">
-          <h2>Quick add (50/50)</h2>
-          <form id="quickExpenseForm" class="stack">
-            <div class="row">
-              <label>Date<input type="date" name="date" required /></label>
-              <label>Amount<input type="number" name="amount" step="0.01" min="0.01" placeholder="0.00" required /></label>
-            </div>
-            <label>Description<input type="text" name="description" placeholder="e.g. Doctor visit copay" required /></label>
-            <div class="row">
-              <label>Category<select name="category" id="catQuick"></select></label>
-              <label>Child<select name="child_id" id="childQuick"></select></label>
-            </div>
-            <label>Paid by<select name="paid_by" id="paidByQuick"></select></label>
-            <button type="submit" class="btn primary">Add expense</button>
-            <p class="muted">Need a custom split, a receipt, or to flag a dispute? Use <a class="link" data-view="expenses" role="button">＋ New expense</a>.</p>
-          </form>
-        </div>
-        <div class="card">
-          <h2>This month at a glance</h2>
-          <div id="monthGlance" class="glance">Loading…</div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-head">
-          <h2>Recent activity</h2>
-          <a class="link" data-view="expenses" role="button">View all</a>
-        </div>
-        <div id="recentList" class="list">Loading…</div>
-      </div>
-    </section>
+  <!-- Bottom nav (mobile) -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="bnav active" data-view="dashboard"><span class="bic" data-ic="dashboard"></span>Home</button>
+    <button class="bnav" data-view="expenses"><span class="bic" data-ic="expenses"></span>Expenses</button>
+    <button class="bnav" data-view="statement"><span class="bic" data-ic="statement"></span>Statement</button>
+    <button class="bnav" data-view="reports"><span class="bic" data-ic="reports"></span>Reports</button>
+    <button class="bnav" id="moreBtn"><span class="bic" data-ic="more"></span>More</button>
+  </nav>
+  <button class="fab" id="fab" aria-label="Add expense"></button>
 
-    <!-- Expenses -->
-    <section class="view" id="view-expenses">
-      <div class="card">
-        <div class="card-head">
-          <h2>Expenses</h2>
-          <button class="btn primary" id="newExpenseBtn">＋ New expense</button>
-        </div>
-        <div class="filters">
-          <label class="grow">Search<input type="search" id="fSearch" placeholder="Description, notes, category…" /></label>
-          <label>Month<input type="month" id="fMonth" /></label>
-          <label>Category<select id="fCategory"></select></label>
-          <label>Child<select id="fChild"></select></label>
-          <label>Paid by<select id="fPaidBy"></select></label>
-          <label>Status<select id="fStatus"></select></label>
-          <button class="btn ghost" id="fClear">Clear</button>
-          <button class="btn ghost" id="exportCsvBtn">⬇ CSV</button>
-        </div>
-        <div id="expenseTable" class="table-wrap">Loading…</div>
-      </div>
-      <div class="card">
-        <h2>Breakdown <span class="muted" id="breakdownScope"></span></h2>
-        <div id="breakdown" class="breakdown"></div>
-      </div>
-    </section>
-
-    <!-- Payments -->
-    <section class="view" id="view-payments">
-      <div class="grid-2">
-        <div class="card">
-          <h2>Record a settlement payment</h2>
-          <p class="muted">Log it when one parent pays the other to settle the balance.</p>
-          <form id="paymentForm" class="stack">
-            <div class="row">
-              <label>Date<input type="date" name="date" required /></label>
-              <label>Amount<input type="number" name="amount" step="0.01" min="0.01" placeholder="0.00" required /></label>
-            </div>
-            <div class="row">
-              <label>From<select name="from_parent" id="payFrom"></select></label>
-              <label>To<select name="to_parent" id="payTo"></select></label>
-            </div>
-            <label>Method<input type="text" name="method" placeholder="Venmo, check, cash…" /></label>
-            <label>Notes<input type="text" name="notes" placeholder="Optional" /></label>
-            <button type="submit" class="btn primary">Record payment</button>
-          </form>
-        </div>
-        <div class="card">
-          <h2>Payment history</h2>
-          <div id="paymentList" class="list">Loading…</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Statement -->
-    <section class="view" id="view-statement">
-      <div class="card no-print">
-        <div class="card-head">
-          <h2>Monthly billing statement</h2>
-          <div class="statement-controls">
-            <input type="month" id="statementMonth" />
-            <button class="btn primary" id="loadStatementBtn">Generate</button>
-            <button class="btn ghost" id="lockStatementBtn">Finalize month</button>
-            <button class="btn ghost" id="printStatementBtn">Print / Save PDF</button>
-          </div>
-        </div>
-        <p class="muted">Finalizing locks a month so its expenses and payments can't be changed — an immutable record once you've both settled.</p>
-      </div>
-      <div id="statementOutput" class="statement-sheet"></div>
-    </section>
-
-    <!-- Recurring -->
-    <section class="view" id="view-recurring">
-      <div class="grid-2">
-        <div class="card">
-          <h2>Add a recurring expense</h2>
-          <p class="muted">For monthly costs like daycare or tuition. KidLedger adds each month's entry automatically when you open the app.</p>
-          <form id="recurringForm" class="stack">
-            <label>Description<input type="text" name="description" placeholder="e.g. After-school care" required /></label>
-            <div class="row">
-              <label>Amount<input type="number" name="amount" step="0.01" min="0.01" required /></label>
-              <label>Day of month<input type="number" name="day" min="1" max="31" value="1" required /></label>
-            </div>
-            <div class="row">
-              <label>Category<select name="category" id="catRec"></select></label>
-              <label>Child<select name="child_id" id="childRec"></select></label>
-            </div>
-            <label>Paid by<select name="paid_by" id="paidByRec"></select></label>
-            <div class="split-fields">
-              <label>Split<select name="split_type" id="splitTypeRec">
-                <option value="even">Even (50/50)</option>
-                <option value="percent">By percentage</option>
-                <option value="amount">By dollar amount</option>
-                <option value="full">One parent pays 100%</option>
-              </select></label>
-              <label id="recPercentWrap" hidden><span id="recPercentLabel">Parent A's share (%)</span><input type="number" name="split_percent" min="0" max="100" step="1" placeholder="50" /></label>
-              <label id="recAmountWrap" hidden><span id="recAmountLabel">Parent A's share ($)</span><input type="number" name="split_amount" min="0" step="0.01" placeholder="0.00" /></label>
-              <label id="recFullWrap" hidden>Who is responsible for the full amount?<select name="split_full" id="splitFullRec"></select></label>
-            </div>
-            <div class="row">
-              <label>Starts<input type="month" name="start_month" required /></label>
-              <label>Ends (optional)<input type="month" name="end_month" /></label>
-            </div>
-            <label class="inline"><input type="checkbox" name="tax_deductible" id="recTax" /> Tax-relevant (medical / childcare)</label>
-            <button type="submit" class="btn primary">Add recurring expense</button>
-          </form>
-        </div>
-        <div class="card">
-          <h2>Recurring expenses</h2>
-          <div id="recurringList" class="list">Loading…</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Reports -->
-    <section class="view" id="view-reports">
-      <div class="card">
-        <h2>Monthly spending</h2>
-        <p class="muted">Total approved expenses per month (last 6 months). Hover a bar for the exact amount.</p>
-        <div id="chartMonthly" class="chart-bars"></div>
-      </div>
-      <div class="card">
-        <h2>Spending by category</h2>
-        <p class="muted">All approved expenses to date.</p>
-        <div id="chartCategory" class="hbars"></div>
-      </div>
-      <div class="card">
-        <div class="card-head">
-          <h2>Tax-relevant summary</h2>
-          <button class="btn ghost" id="exportTaxBtn">⬇ CSV</button>
-        </div>
-        <p class="muted">Approved expenses flagged tax-relevant, grouped by year. Each parent's responsibility share is shown separately — useful for FSA claims or splitting deductions.</p>
-        <div id="taxSummary" class="table-wrap"></div>
-      </div>
-    </section>
-
-    <!-- Settings -->
-    <section class="view" id="view-settings">
-      <div class="grid-2">
-        <div class="card">
-          <h2>Parent names</h2>
-          <form id="settingsForm" class="stack">
-            <label>Parent A<input type="text" name="parent_a_name" required /></label>
-            <label>Parent B<input type="text" name="parent_b_name" required /></label>
-            <button type="submit" class="btn primary">Save names</button>
-          </form>
-        </div>
-        <div class="card">
-          <h2>Children</h2>
-          <form id="childForm" class="row">
-            <input type="text" name="name" placeholder="Child's name" required />
-            <button type="submit" class="btn primary">Add</button>
-          </form>
-          <div id="childList" class="chips"></div>
-        </div>
-      </div>
-      <div class="card">
-        <h2>Sync across devices — Google Drive</h2>
-        <p class="muted">Keep your phone and desktop in sync by storing the ledger in your own Google Drive (a single private <code>kidledger.json</code> the app manages — it can't see anything else in your Drive).</p>
-        <div id="syncStatus" class="sync-status"><span class="dot"></span><span id="syncStatusText">Not connected</span></div>
-        <form id="syncForm" class="stack" autocomplete="off">
-          <label>Google Client ID<input type="text" id="clientIdInput" placeholder="1234567890-abc.apps.googleusercontent.com" /></label>
-          <div class="row" style="flex-wrap:wrap;">
-            <button type="button" class="btn primary" id="connectDriveBtn">Connect Google Drive</button>
-            <button type="button" class="btn ghost" id="syncNowBtn">Sync now</button>
-            <button type="button" class="btn ghost" id="disconnectDriveBtn">Disconnect</button>
-          </div>
-          <label class="inline"><input type="checkbox" id="autoSyncToggle" checked /> Auto-sync when I open the app and after changes</label>
-        </form>
-        <details class="help">
-          <summary>One-time setup — how to get a Google Client ID</summary>
-          <ol>
-            <li>Go to <code>console.cloud.google.com</code> and create a project (any name).</li>
-            <li>APIs &amp; Services → <b>Enable APIs</b> → enable <b>Google Drive API</b>.</li>
-            <li>APIs &amp; Services → <b>OAuth consent screen</b> → choose <b>External</b>, fill the app name and your email, and add yourself as a <b>Test user</b>.</li>
-            <li>APIs &amp; Services → <b>Credentials</b> → <b>Create credentials</b> → <b>OAuth client ID</b> → type <b>Web application</b>.</li>
-            <li>Under <b>Authorized JavaScript origins</b> add this site's address (e.g. <code>https://YOURNAME.github.io</code>).</li>
-            <li>Copy the <b>Client ID</b> it gives you, paste it above, and click <b>Connect Google Drive</b>.</li>
-          </ol>
-        </details>
-      </div>
-      <div class="card">
-        <h2>Backup &amp; data</h2>
-        <p class="muted">Your data is stored only in this browser. Export a backup file regularly so you don't lose your history if the browser data is cleared.</p>
-        <div class="row" style="margin-top:14px; flex-wrap:wrap;">
-          <button class="btn ghost" id="exportBtn">⬇ Export backup (.json)</button>
-          <button class="btn ghost" id="importBtn">⬆ Import backup</button>
-          <input type="file" id="importFile" accept="application/json,.json" hidden />
-          <button class="btn danger" id="clearBtn">Clear all data</button>
-        </div>
-      </div>
-      <div class="card">
-        <h2>How the math works</h2>
-        <p class="muted">Each expense is divided into a responsibility share for each parent — evenly by default, or by a custom percentage, a fixed dollar amount, or 100% to one parent. Whoever pays covers the other parent's share, so the other parent owes them that amount. Disputed expenses are excluded from the balance until approved. Settlement payments reduce the running balance. The monthly statement carries any prior balance forward, adds the month's activity, and shows who owes whom at month end.</p>
-      </div>
-    </section>
-  </main>
-
-  <!-- Expense editor modal -->
-  <div class="modal-backdrop" id="expenseModal" hidden>
+  <!-- Expense modal -->
+  <div class="backdrop" id="expenseModal" hidden>
     <div class="modal card">
-      <div class="card-head">
-        <h2 id="expenseModalTitle">New expense</h2>
-        <button class="icon-btn" id="closeExpenseModal" aria-label="Close">✕</button>
-      </div>
+      <div class="card-head"><h2 id="expenseModalTitle">New expense</h2><button class="icon-btn" id="closeExpenseModal" aria-label="Close">✕</button></div>
       <form id="expenseForm" class="stack">
         <input type="hidden" name="id" />
         <div class="row">
@@ -452,10 +598,9 @@
         <label>Description<input type="text" name="description" required /></label>
         <div class="row">
           <label>Category<select name="category" id="catFull"></select></label>
-          <label>Child<select name="child_id" id="childFull"></select></label>
+          <label>For<select name="child_id" id="childFull"></select></label>
         </div>
         <label>Paid by<select name="paid_by" id="paidByFull"></select></label>
-
         <div class="split-fields">
           <label>Split<select name="split_type" id="splitType">
             <option value="even">Even (50/50)</option>
@@ -465,18 +610,15 @@
           </select></label>
           <label id="splitPercentWrap" hidden><span id="splitPercentLabel">Parent A's share (%)</span><input type="number" name="split_percent" min="0" max="100" step="1" placeholder="50" /></label>
           <label id="splitAmountWrap" hidden><span id="splitAmountLabel">Parent A's share ($)</span><input type="number" name="split_amount" min="0" step="0.01" placeholder="0.00" /></label>
-          <label id="splitFullWrap" hidden>Who is responsible for the full amount?<select name="split_full" id="splitFull"></select></label>
+          <label id="splitFullWrap" hidden>Responsible parent<select name="split_full" id="splitFull"></select></label>
           <div class="split-preview" id="splitPreview"></div>
         </div>
-
         <div class="receipt-row">
           <label style="flex:1;">Receipt (image or PDF)<input type="file" id="receiptInput" accept="image/*,application/pdf" /></label>
-          <div id="receiptStatus" class="li-sub"></div>
+          <div id="receiptStatus" class="muted"></div>
         </div>
-
-        <label class="inline"><input type="checkbox" name="status_disputed" id="statusDisputed" /> Mark as disputed (excluded from the balance until approved)</label>
-        <label class="inline"><input type="checkbox" name="tax_deductible" id="taxDeductible" /> Tax-relevant (medical / childcare — for FSA or tax time)</label>
-
+        <label class="inline"><input type="checkbox" name="status_disputed" id="statusDisputed" /> Mark as disputed (excluded from balance until approved)</label>
+        <label class="inline"><input type="checkbox" name="tax_deductible" id="taxDeductible" /> Tax-relevant (medical / childcare)</label>
         <label>Notes<input type="text" name="notes" placeholder="Optional" /></label>
         <div class="row end">
           <button type="button" class="btn ghost" id="cancelExpenseModal">Cancel</button>
@@ -486,14 +628,21 @@
     </div>
   </div>
 
-  <!-- Receipt viewer modal -->
-  <div class="modal-backdrop" id="receiptModal" hidden>
+  <!-- Receipt viewer -->
+  <div class="backdrop" id="receiptModal" hidden>
     <div class="modal card" style="max-width:680px;">
-      <div class="card-head">
-        <h2 id="receiptModalTitle">Receipt</h2>
-        <button class="icon-btn" id="closeReceiptModal" aria-label="Close">✕</button>
-      </div>
+      <div class="card-head"><h2 id="receiptModalTitle">Receipt</h2><button class="icon-btn" id="closeReceiptModal" aria-label="Close">✕</button></div>
       <div id="receiptBody" class="receipt-body"></div>
+    </div>
+  </div>
+
+  <!-- More sheet (mobile) -->
+  <div class="backdrop" id="moreSheet" hidden style="align-items:flex-end;padding:0;">
+    <div class="sheet">
+      <div class="grab"></div>
+      <button class="nav-item" data-view="payments"><span>Payments &amp; rollover</span></button>
+      <button class="nav-item" data-view="recurring"><span>Recurring expenses</span></button>
+      <button class="nav-item" data-view="settings"><span>Settings</span></button>
     </div>
   </div>
 
@@ -505,20 +654,47 @@
   <script>
   'use strict';
   (function () {
-    // ---------------------------------------------------------------------
-    // Persistent store (localStorage)
-    // ---------------------------------------------------------------------
+    // ===================================================================
+    // Icons
+    // ===================================================================
+    const ICONS = {
+      dashboard: '<path d="M3 12l9-8 9 8"/><path d="M5 10v10h14V10"/>',
+      expenses: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+      payments: '<path d="M4 7h13l-3-3M20 17H7l3 3"/>',
+      recurring: '<path d="M21 12a9 9 0 1 1-3-6.7M21 4v4h-4"/>',
+      reports: '<path d="M4 20V4M4 20h16M9 16v-5M14 16V8M19 16v-3"/>',
+      statement: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/>',
+      settings: '<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.3l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2.2-1.3L14 2h-4l-.3 2.4A7 7 0 0 0 7.5 5.7l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .9.1 1.3l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2.2 1.3L10 22h4l.3-2.4a7 7 0 0 0 2.2-1.3l2.4 1 2-3.4-2-1.6c.1-.4.1-.9.1-1.3z"/>',
+      more: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+      plus: '<path d="M12 5v14M5 12h14"/>',
+    };
+    function svg(name) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || '') + '</svg>'; }
+
+    // ===================================================================
+    // Store
+    // ===================================================================
     const STORAGE_KEY = 'kidledger.v1';
-    const CATEGORIES = ['Medical', 'Childcare', 'Education', 'Activities', 'Clothing', 'Food', 'Travel', 'Other'];
+    const DEFAULT_CATEGORIES = ['Medical', 'Childcare', 'Education', 'Activities', 'Clothing', 'Food', 'Travel', 'Other'];
+    const VIEW_TITLES = { dashboard: 'Dashboard', expenses: 'Expenses', payments: 'Payments', recurring: 'Recurring', reports: 'Reports', statement: 'Statement', settings: 'Settings' };
 
     function blankState() {
-      return { seq: 0, updatedAt: 0, parents: { A: 'Parent A', B: 'Parent B' }, children: [], expenses: [], payments: [], locked_months: [], recurring: [] };
+      return { seq: 0, updatedAt: 0, parents: { A: 'Parent A', B: 'Parent B' }, categories: DEFAULT_CATEGORIES.slice(), children: [], expenses: [], payments: [], adjustments: [], locked_months: [], recurring: [] };
     }
     let state = load();
-    let applyingRemote = false; // guard so pulling from Drive doesn't re-trigger a push
+    let applyingRemote = false;
 
     function normalizeExpense(e) {
-      return Object.assign({ category: 'Other', child_id: null, notes: null, split_type: 'even', split_value: null, status: 'approved', receipt: null, tax_deductible: false, recurring_id: null }, e);
+      const n = Object.assign({ category: 'Other', child_id: 'shared', notes: null, split_type: 'even', split_value: null, status: 'approved', receipt: null, tax_deductible: false, recurring_id: null }, e);
+      if (n.child_id === null || n.child_id === undefined || n.child_id === '') n.child_id = 'shared';
+      return n;
+    }
+    function normalizePayment(p) { return Object.assign({ child_id: 'shared', method: null, notes: null }, p); }
+    function migrate(s) {
+      if (!Array.isArray(s.categories) || !s.categories.length) s.categories = DEFAULT_CATEGORIES.slice();
+      if (!Array.isArray(s.adjustments)) s.adjustments = [];
+      s.expenses = (s.expenses || []).map(normalizeExpense);
+      s.payments = (s.payments || []).map(normalizePayment);
+      return s;
     }
     function load() {
       try {
@@ -530,1060 +706,593 @@
           locked_months: Array.isArray(parsed.locked_months) ? parsed.locked_months : [],
           recurring: Array.isArray(parsed.recurring) ? parsed.recurring : [],
         });
-        s.expenses = (s.expenses || []).map(normalizeExpense);
-        return s;
-      } catch (e) {
-        console.error('Failed to load state', e);
-        return blankState();
-      }
+        return migrate(s);
+      } catch (e) { console.error(e); return blankState(); }
     }
-    function saveRaw() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      } catch (e) {
-        toast('Could not save — storage may be full (large receipts?) or blocked', true);
-      }
-    }
-    // Normal save: stamp a new document timestamp and (if connected) queue a push.
-    function save() {
-      if (!applyingRemote) state.updatedAt = Date.now();
-      saveRaw();
-      if (!applyingRemote) scheduleAutoPush();
-    }
+    function saveRaw() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { toast('Could not save — storage may be full or blocked', true); } }
+    function save() { if (!applyingRemote) state.updatedAt = Date.now(); saveRaw(); if (!applyingRemote) scheduleAutoPush(); }
     function nextId() { state.seq = (state.seq || 0) + 1; return state.seq; }
 
-    // ---------------------------------------------------------------------
+    // ===================================================================
     // Helpers
-    // ---------------------------------------------------------------------
+    // ===================================================================
     const $ = (s, r = document) => r.querySelector(s);
     const $$ = (s, r = document) => [...r.querySelectorAll(s)];
     const money = (n) => '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-    function fmtDate(iso) {
-      if (!iso) return '';
-      const [y, m, d] = iso.split('-').map(Number);
-      return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    }
-    function monthLabel(ym) {
-      const [y, m] = ym.split('-').map(Number);
-      return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    }
-    function todayISO() {
-      const d = new Date();
-      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    }
+    function fmtDate(iso) { if (!iso) return ''; const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+    function monthLabel(ym) { const [y, m] = ym.split('-').map(Number); return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }); }
+    function todayISO() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
     function thisMonth() { return todayISO().slice(0, 7); }
-    function parentName(code) { return code === 'A' ? state.parents.A : state.parents.B; }
-    function childName(id) { const c = state.children.find((x) => String(x.id) === String(id)); return c ? c.name : null; }
-    function enrichedExpenses() { return state.expenses.map((e) => Object.assign({}, e, { child_name: childName(e.child_id) })); }
+    function thisYear() { return todayISO().slice(0, 4); }
+    function parentName(c) { return c === 'A' ? state.parents.A : state.parents.B; }
+    function childName(id) { if (id === 'shared' || id == null) return 'Shared'; const c = state.children.find((x) => String(x.id) === String(id)); return c ? c.name : 'Shared'; }
+    function enrich(list) { return list.map((x) => Object.assign({}, x, { child_name: childName(x.child_id) })); }
+    function enrichedExpenses() { return enrich(state.expenses); }
     function expensesDesc() { return [...state.expenses].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id); }
-    function paymentsDesc() { return [...state.payments].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id); }
-    function isLocked(dateStr) { return !!dateStr && state.locked_months.includes(dateStr.slice(0, 7)); }
+    function isLocked(d) { return !!d && state.locked_months.includes(d.slice(0, 7)); }
     function nextMonthStr(m) { let [y, mo] = m.split('-').map(Number); mo++; if (mo > 12) { mo = 1; y++; } return y + '-' + String(mo).padStart(2, '0'); }
+    function prevMonthStr(m) { let [y, mo] = m.split('-').map(Number); mo--; if (mo < 1) { mo = 12; y--; } return y + '-' + String(mo).padStart(2, '0'); }
     function daysInMonth(y, mo) { return new Date(y, mo, 0).getDate(); }
     function occurrenceDate(m, day) { const [y, mo] = m.split('-').map(Number); const d = Math.min(Math.max(day || 1, 1), daysInMonth(y, mo)); return m + '-' + String(d).padStart(2, '0'); }
 
-    // Auto-create the actual expense entries for each active recurring template.
-    // Months already generated are remembered so deleting an instance won't resurrect it.
-    function generateRecurring() {
-      const cur = thisMonth();
-      let created = 0;
-      for (const t of state.recurring) {
-        if (!t.active) continue;
-        if (!Array.isArray(t.generated)) t.generated = [];
-        let m = t.start_month;
-        let guard = 0;
-        while (m <= cur && (!t.end_month || m <= t.end_month) && guard < 600) {
-          guard++;
-          if (!t.generated.includes(m)) {
-            const date = occurrenceDate(m, t.day);
-            if (!isLocked(date)) {
-              state.expenses.push(normalizeExpense({
-                id: nextId(), date, description: t.description, amount: Number(t.amount),
-                category: t.category || 'Other', paid_by: t.paid_by, child_id: t.child_id || null,
-                split_type: t.split_type || 'even', split_value: t.split_value == null ? null : t.split_value,
-                status: 'approved', tax_deductible: !!t.tax_deductible, recurring_id: t.id, notes: 'Auto (recurring)',
-              }));
-              t.generated.push(m);
-              created++;
-            }
-          }
-          m = nextMonthStr(m);
-        }
-      }
-      if (created) save();
-      return created;
-    }
-
     let toastTimer;
-    function toast(msg, isErr) {
-      const t = $('#toast');
-      t.textContent = msg;
-      t.className = 'toast' + (isErr ? ' err' : '');
-      t.hidden = false;
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => { t.hidden = true; }, 3200);
-    }
+    function toast(msg, isErr) { const t = $('#toast'); t.textContent = msg; t.className = 'toast' + (isErr ? ' err' : ''); t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3000); }
 
-    // ---------------------------------------------------------------------
     // Option builders
-    // ---------------------------------------------------------------------
-    function parentOptions(sel) {
-      return '<option value="A"' + (sel === 'A' ? ' selected' : '') + '>' + esc(state.parents.A) + '</option>' +
-             '<option value="B"' + (sel === 'B' ? ' selected' : '') + '>' + esc(state.parents.B) + '</option>';
+    function parentOptions(sel) { return '<option value="A"' + (sel === 'A' ? ' selected' : '') + '>' + esc(state.parents.A) + '</option><option value="B"' + (sel === 'B' ? ' selected' : '') + '>' + esc(state.parents.B) + '</option>'; }
+    function categoryOptions(sel) { return state.categories.map((c) => '<option' + (c === sel ? ' selected' : '') + '>' + esc(c) + '</option>').join(''); }
+    // Assignment select for forms: children + Shared (no empty option).
+    function assignOptions(sel) {
+      const s = String(sel == null ? 'shared' : sel);
+      return state.children.map((c) => '<option value="' + c.id + '"' + (String(c.id) === s ? ' selected' : '') + '>' + esc(c.name) + '</option>').join('') +
+        '<option value="shared"' + (s === 'shared' ? ' selected' : '') + '>Shared</option>';
     }
-    function categoryOptions(sel) {
-      return CATEGORIES.map((c) => '<option' + (c === sel ? ' selected' : '') + '>' + c + '</option>').join('');
+    function assignFilterOptions() {
+      return '<option value="">All</option>' + state.children.map((c) => '<option value="' + c.id + '">' + esc(c.name) + '</option>').join('') + '<option value="shared">Shared</option>';
     }
-    function childOptions(sel) {
-      return '<option value="">— Any / shared —</option>' +
-        state.children.map((c) => '<option value="' + c.id + '"' + (String(c.id) === String(sel) ? ' selected' : '') + '>' + esc(c.name) + '</option>').join('');
-    }
+    function readAssign(v) { return v === 'shared' ? 'shared' : Number(v); }
+
     function refreshSelects() {
       $('#paidByQuick').innerHTML = parentOptions('A');
-      $('#catQuick').innerHTML = categoryOptions('Other');
-      $('#childQuick').innerHTML = childOptions('');
+      $('#catQuick').innerHTML = categoryOptions(state.categories[0]);
+      $('#childQuick').innerHTML = assignOptions('shared');
       $('#payFrom').innerHTML = parentOptions('B');
       $('#payTo').innerHTML = parentOptions('A');
-      // Filters
-      $('#fCategory').innerHTML = '<option value="">All categories</option>' + categoryOptions('').replace('selected', '');
-      $('#fChild').innerHTML = '<option value="">All children</option><option value="none">Unassigned</option>' +
-        state.children.map((c) => '<option value="' + c.id + '">' + esc(c.name) + '</option>').join('');
-      $('#fPaidBy').innerHTML = '<option value="">Either parent</option>' + parentOptions('').replace('selected', '');
-      $('#fStatus').innerHTML = '<option value="">All statuses</option><option value="approved">Approved</option><option value="disputed">Disputed</option>';
-      // Recurring form
+      $('#payChild').innerHTML = assignOptions('shared');
+      $('#adjFavor').innerHTML = parentOptions('A');
+      $('#adjChild').innerHTML = assignOptions('shared');
       $('#catRec').innerHTML = categoryOptions('Childcare');
-      $('#childRec').innerHTML = childOptions('');
+      $('#childRec').innerHTML = assignOptions('shared');
       $('#paidByRec').innerHTML = parentOptions('A');
       $('#splitFullRec').innerHTML = parentOptions('A');
+      $('#fCategory').innerHTML = '<option value="">All categories</option>' + categoryOptions(null);
+      $('#fChild').innerHTML = assignFilterOptions();
+      $('#fPaidBy').innerHTML = '<option value="">Either parent</option>' + parentOptions(null);
+      $('#fStatus').innerHTML = '<option value="">All statuses</option><option value="approved">Approved</option><option value="disputed">Disputed</option>';
     }
 
-    // ---------------------------------------------------------------------
+    // Inject nav icons
+    function injectNavIcons() {
+      $$('#sideNav .nav-item').forEach((b) => { if (!b.querySelector('svg')) b.insertAdjacentHTML('afterbegin', svg(b.dataset.view)); });
+      $$('#bottomNav .bic').forEach((s) => { s.innerHTML = svg(s.dataset.ic); });
+      $('#fab').innerHTML = svg('plus');
+    }
+
+    // ===================================================================
     // Navigation
-    // ---------------------------------------------------------------------
+    // ===================================================================
     function showView(name) {
-      $$('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === name));
+      $$('[data-view]').forEach((b) => { if (b.classList.contains('nav-item') || b.classList.contains('bnav')) b.classList.toggle('active', b.dataset.view === name); });
       $$('.view').forEach((v) => v.classList.toggle('active', v.id === 'view-' + name));
-      if (name === 'statement' && !$('#statementOutput').dataset.loaded) {
-        $('#statementMonth').value = $('#statementMonth').value || thisMonth();
-        loadStatement();
-      }
+      $('#mobileTitle').textContent = VIEW_TITLES[name] || 'KidLedger';
+      $('#moreSheet').hidden = true;
+      $('#content').scrollTop = 0; window.scrollTo(0, 0);
+      if (name === 'statement' && !$('#statementOutput').dataset.loaded) { $('#statementMonth').value = $('#statementMonth').value || thisMonth(); loadStatement(); }
+      if (name === 'reports') renderReports();
     }
     document.addEventListener('click', (e) => {
       const nav = e.target.closest('[data-view]');
-      if (nav) showView(nav.dataset.view);
+      if (nav) { e.preventDefault(); showView(nav.dataset.view); }
     });
+    $('#moreBtn').addEventListener('click', (e) => { e.stopPropagation(); $('#moreSheet').hidden = false; });
+    $('#moreSheet').addEventListener('click', (e) => { if (e.target.id === 'moreSheet') $('#moreSheet').hidden = true; });
+    $('#fab').addEventListener('click', () => openExpenseModal(null));
 
-    // ---------------------------------------------------------------------
+    // ===================================================================
     // Dashboard
-    // ---------------------------------------------------------------------
+    // ===================================================================
+    function balance() { return Finance.computeBalance(state.expenses, state.payments, state.adjustments); }
     function renderDashboard() {
-      const balance = Finance.computeBalance(state.expenses, state.payments);
-      const s = Finance.describeBalance(balance, state.parents);
-      const card = $('#balanceCard');
-      card.classList.toggle('settled', s.settled);
-      $('#balanceText').textContent = s.settled ? "You're all settled up 🎉" : money(s.amount);
-      $('#balanceSub').textContent = s.settled ? 'No outstanding balance.' : s.text;
+      const s = Finance.describeBalance(balance(), state.parents);
+      const hero = $('#hero');
+      hero.classList.toggle('settled', s.settled);
+      $('#balanceText').textContent = s.settled ? 'All settled up' : money(s.amount);
+      $('#balanceSub').textContent = s.settled ? 'Nobody owes anything right now.' : s.text;
 
       const m = thisMonth();
-      const monthExp = state.expenses.filter((e) => e.date.slice(0, 7) === m && e.status !== 'disputed');
-      const disputedCount = state.expenses.filter((e) => e.date.slice(0, 7) === m && e.status === 'disputed').length;
-      const total = monthExp.reduce((sum, e) => sum + e.amount, 0);
-      const byA = monthExp.filter((e) => e.paid_by === 'A').reduce((a, e) => a + e.amount, 0);
-      const byB = monthExp.filter((e) => e.paid_by === 'B').reduce((a, e) => a + e.amount, 0);
+      const mExp = state.expenses.filter((e) => e.date.slice(0, 7) === m && e.status !== 'disputed');
+      const total = mExp.reduce((t, e) => t + e.amount, 0);
+      const byA = mExp.filter((e) => e.paid_by === 'A').reduce((t, e) => t + e.amount, 0);
+      const byB = mExp.filter((e) => e.paid_by === 'B').reduce((t, e) => t + e.amount, 0);
+      $('#dashTiles').innerHTML =
+        tile('This month', money(total), mExp.length + ' expense(s)') +
+        tile("Each parent's share", money(total / 2), 'if split evenly') +
+        tile(esc(state.parents.A) + ' paid', money(byA), '') +
+        tile(esc(state.parents.B) + ' paid', money(byB), '');
+
       $('#monthGlance').innerHTML =
-        glanceRow(monthLabel(m) + ' expenses', monthExp.length) +
-        glanceRow('Total spent', money(total)) +
-        glanceRow(esc(state.parents.A) + ' paid', money(byA)) +
-        glanceRow(esc(state.parents.B) + ' paid', money(byB)) +
-        (disputedCount ? glanceRow('Disputed (not counted)', disputedCount) : '');
+        glance(monthLabel(m), '') +
+        glance('Total spent', money(total)) +
+        glance(esc(state.parents.A) + ' paid', money(byA)) +
+        glance(esc(state.parents.B) + ' paid', money(byB));
 
       const items = [
-        ...state.expenses.map((e) => ({ kind: 'expense', date: e.date, id: e.id, data: e })),
-        ...state.payments.map((p) => ({ kind: 'payment', date: p.date, id: p.id, data: p })),
-      ].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id).slice(0, 8);
-
-      $('#recentList').innerHTML = items.length ? items.map((it) => {
-        if (it.kind === 'expense') {
-          const e = it.data;
-          const disputed = e.status === 'disputed' ? ' <span class="pill warn tiny">Disputed</span>' : '';
-          return '<div class="list-item">' +
-            '<span class="pill ' + e.paid_by.toLowerCase() + '">' + esc(parentName(e.paid_by)) + ' paid</span>' +
-            '<div class="li-main"><div class="li-title">' + esc(e.description) + disputed + '</div>' +
-            '<div class="li-sub">' + fmtDate(e.date) + ' · ' + esc(e.category) + (childName(e.child_id) ? ' · ' + esc(childName(e.child_id)) : '') + ' · ' + esc(Finance.splitLabel(e, state.parents)) + '</div></div>' +
-            '<div class="li-amount">' + money(e.amount) + '</div></div>';
-        }
-        const p = it.data;
-        return '<div class="list-item"><span class="pill pay">Payment</span>' +
-          '<div class="li-main"><div class="li-title">' + esc(parentName(p.from_parent)) + ' → ' + esc(parentName(p.to_parent)) + '</div>' +
-          '<div class="li-sub">' + fmtDate(p.date) + (p.method ? ' · ' + esc(p.method) : '') + '</div></div>' +
-          '<div class="li-amount">' + money(p.amount) + '</div></div>';
-      }).join('') : '<div class="empty">No activity yet. Add your first expense above.</div>';
+        ...state.expenses.map((e) => ({ k: 'e', date: e.date, id: e.id, d: e })),
+        ...state.payments.map((p) => ({ k: 'p', date: p.date, id: p.id, d: p })),
+        ...state.adjustments.map((a) => ({ k: 'a', date: a.date, id: a.id, d: a })),
+      ].sort((x, y) => y.date.localeCompare(x.date) || y.id - x.id).slice(0, 8);
+      $('#recentList').innerHTML = items.length ? items.map(activityRow).join('') : '<div class="empty">No activity yet. Add your first expense above.</div>';
     }
-    function glanceRow(label, val) {
-      return '<div class="glance-row"><span>' + label + '</span><span class="g-val">' + val + '</span></div>';
+    function tile(k, v, d) { return '<div class="tile"><div class="k">' + k + '</div><div class="v">' + v + '</div>' + (d ? '<div class="d">' + d + '</div>' : '') + '</div>'; }
+    function glance(k, v) { return '<div class="glance-row"><span>' + k + '</span><span class="gv">' + v + '</span></div>'; }
+    function activityRow(it) {
+      if (it.k === 'e') {
+        const e = it.d, disp = e.status === 'disputed' ? ' <span class="pill warn tiny">Disputed</span>' : '';
+        return '<div class="li"><div class="avatar ' + e.paid_by.toLowerCase() + '">' + esc(parentName(e.paid_by).slice(0, 1)) + '</div>' +
+          '<div class="main"><div class="t">' + esc(e.description) + disp + '</div><div class="s">' + fmtDate(e.date) + ' · ' + esc(e.category) + ' · ' + esc(childName(e.child_id)) + ' · ' + esc(Finance.splitLabel(e, state.parents)) + '</div></div>' +
+          '<div class="amt">' + money(e.amount) + '</div></div>';
+      }
+      if (it.k === 'p') {
+        const p = it.d;
+        return '<div class="li"><div class="avatar pay">↔</div><div class="main"><div class="t">Payment · ' + esc(parentName(p.from_parent)) + ' → ' + esc(parentName(p.to_parent)) + '</div><div class="s">' + fmtDate(p.date) + (p.method ? ' · ' + esc(p.method) : '') + '</div></div><div class="amt">' + money(p.amount) + '</div></div>';
+      }
+      const a = it.d;
+      return '<div class="li"><div class="avatar adj">±</div><div class="main"><div class="t">' + esc(a.label || 'Adjustment') + '</div><div class="s">' + fmtDate(a.date) + ' · owed to ' + esc(parentName(a.favor)) + '</div></div><div class="amt">' + money(a.amount) + '</div></div>';
     }
 
-    // ---------------------------------------------------------------------
-    // Expenses: filters, table, breakdown, CSV
-    // ---------------------------------------------------------------------
-    function getFilters() {
-      return {
-        search: $('#fSearch').value.trim().toLowerCase(),
-        month: $('#fMonth').value,
-        category: $('#fCategory').value,
-        child: $('#fChild').value,
-        paidBy: $('#fPaidBy').value,
-        status: $('#fStatus').value,
-      };
-    }
+    // ===================================================================
+    // Expenses
+    // ===================================================================
+    function getFilters() { return { search: $('#fSearch').value.trim().toLowerCase(), month: $('#fMonth').value, category: $('#fCategory').value, child: $('#fChild').value, paidBy: $('#fPaidBy').value, status: $('#fStatus').value }; }
     function filteredExpenses() {
       const f = getFilters();
       return expensesDesc().filter((e) => {
         if (f.month && e.date.slice(0, 7) !== f.month) return false;
         if (f.category && e.category !== f.category) return false;
-        if (f.child === 'none' && e.child_id) return false;
-        if (f.child && f.child !== 'none' && String(e.child_id) !== f.child) return false;
+        if (f.child === 'shared' && e.child_id !== 'shared') return false;
+        if (f.child && f.child !== 'shared' && String(e.child_id) !== f.child) return false;
         if (f.paidBy && e.paid_by !== f.paidBy) return false;
         if (f.status && (e.status || 'approved') !== f.status) return false;
-        if (f.search) {
-          const hay = [e.description, e.notes, e.category, childName(e.child_id)].filter(Boolean).join(' ').toLowerCase();
-          if (!hay.includes(f.search)) return false;
-        }
+        if (f.search) { const hay = [e.description, e.notes, e.category, childName(e.child_id)].filter(Boolean).join(' ').toLowerCase(); if (!hay.includes(f.search)) return false; }
         return true;
       });
     }
-
     function renderExpenses() {
       const rows = filteredExpenses();
-      renderBreakdown(rows);
-      if (!rows.length) {
-        $('#expenseTable').innerHTML = '<div class="empty">No expenses match these filters.</div>';
-        return;
-      }
+      const counted = rows.filter((e) => e.status !== 'disputed');
+      const total = counted.reduce((t, e) => t + e.amount, 0);
+      $('#expSummary').innerHTML = '<span><b>' + counted.length + '</b> expense(s)</span><span>Total <b>' + money(total) + '</b></span>' + (rows.length !== counted.length ? '<span>' + (rows.length - counted.length) + ' disputed (excluded)</span>' : '');
+      if (!rows.length) { $('#expenseTable').innerHTML = '<div class="empty">No expenses match these filters.</div>'; return; }
       $('#expenseTable').innerHTML =
-        '<table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Child</th><th>Paid by</th>' +
-        '<th class="num">Amount</th><th class="num">Owed</th><th></th></tr></thead><tbody>' +
+        '<table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>For</th><th>Paid by</th><th class="num">Amount</th><th class="num">Owed</th><th></th></tr></thead><tbody>' +
         rows.map((e) => {
-          const sh = Finance.shares(e);
-          const owed = e.paid_by === 'A' ? sh.B : sh.A;
-          const locked = isLocked(e.date);
-          const disputed = e.status === 'disputed';
-          return '<tr>' +
-            '<td>' + fmtDate(e.date) + (locked ? ' <span class="pill tiny" title="Finalized month">🔒</span>' : '') + '</td>' +
-            '<td>' + esc(e.description) +
-              (disputed ? ' <span class="pill warn tiny">Disputed</span>' : '') +
-              '<div class="li-sub">' + esc(Finance.splitLabel(e, state.parents)) + (e.receipt ? ' · 📎 receipt' : '') + (e.tax_deductible ? ' · 🏷 tax' : '') + (e.notes ? ' · ' + esc(e.notes) : '') + '</div></td>' +
-            '<td>' + esc(e.category) + '</td>' +
-            '<td>' + (childName(e.child_id) ? esc(childName(e.child_id)) : '<span class="muted">—</span>') + '</td>' +
+          const sh = Finance.shares(e), owed = e.paid_by === 'A' ? sh.B : sh.A, disp = e.status === 'disputed';
+          return '<tr><td>' + fmtDate(e.date) + (isLocked(e.date) ? ' 🔒' : '') + '</td>' +
+            '<td>' + esc(e.description) + (disp ? ' <span class="pill warn tiny">Disputed</span>' : '') + '<div class="s" style="color:var(--muted);font-size:12px;">' + esc(Finance.splitLabel(e, state.parents)) + (e.receipt ? ' · 📎' : '') + (e.tax_deductible ? ' · 🏷 tax' : '') + (e.notes ? ' · ' + esc(e.notes) : '') + '</div></td>' +
+            '<td>' + esc(e.category) + '</td><td>' + esc(childName(e.child_id)) + '</td>' +
             '<td><span class="pill ' + e.paid_by.toLowerCase() + '">' + esc(parentName(e.paid_by)) + '</span></td>' +
-            '<td class="num">' + money(e.amount) + '</td>' +
-            '<td class="num">' + (disputed ? '<span class="muted">—</span>' : money(owed)) + '</td>' +
-            '<td><div class="row-actions">' +
-              (e.receipt ? '<button class="mini-btn" data-receipt="' + e.id + '">📎</button>' : '') +
-              '<button class="mini-btn" data-dispute="' + e.id + '">' + (disputed ? 'Approve' : 'Dispute') + '</button>' +
-              '<button class="mini-btn" data-edit="' + e.id + '">Edit</button>' +
-              '<button class="mini-btn danger" data-del-expense="' + e.id + '">Delete</button>' +
-            '</div></td></tr>';
+            '<td class="num">' + money(e.amount) + '</td><td class="num">' + (disp ? '—' : money(owed)) + '</td>' +
+            '<td><div class="row-actions">' + (e.receipt ? '<button class="mini" data-receipt="' + e.id + '">📎</button>' : '') +
+            '<button class="mini" data-dispute="' + e.id + '">' + (disp ? 'Approve' : 'Dispute') + '</button>' +
+            '<button class="mini" data-edit="' + e.id + '">Edit</button><button class="mini danger" data-del-expense="' + e.id + '">Del</button></div></td></tr>';
         }).join('') + '</tbody></table>';
     }
 
-    function renderBreakdown(rows) {
-      const scope = $('#breakdownScope');
-      const counted = rows.filter((e) => e.status !== 'disputed');
-      const total = counted.reduce((s, e) => s + e.amount, 0);
-      scope.textContent = '· ' + counted.length + ' expense(s), ' + money(total) + (rows.length !== counted.length ? ' (excludes ' + (rows.length - counted.length) + ' disputed)' : '');
-
-      const byCat = {};
-      const byChild = {};
-      for (const e of counted) {
-        byCat[e.category] = (byCat[e.category] || 0) + e.amount;
-        const cn = childName(e.child_id) || 'Unassigned / shared';
-        byChild[cn] = (byChild[cn] || 0) + e.amount;
-      }
-      const toRows = (obj) => {
-        const entries = Object.entries(obj).sort((a, b) => b[1] - a[1]);
-        if (!entries.length) return '<div class="muted">No expenses.</div>';
-        return entries.map(([k, v]) => '<div class="bd-row"><span>' + esc(k) + '</span><span class="v">' + money(v) + '</span></div>').join('');
-      };
-      $('#breakdown').innerHTML =
-        '<div><div class="bd-title">By category</div>' + toRows(byCat) + '</div>' +
-        '<div><div class="bd-title">By child</div>' + toRows(byChild) + '</div>';
-    }
-
-    function csvEscape(v) {
-      const s = String(v == null ? '' : v);
-      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-    }
-    function exportCsv() {
-      const rows = filteredExpenses();
-      if (!rows.length) { toast('Nothing to export with these filters', true); return; }
-      const header = ['Date', 'Description', 'Category', 'Child', 'Paid by', 'Amount', state.parents.A + ' share', state.parents.B + ' share', 'Split', 'Status', 'Tax-relevant', 'Notes'];
-      const lines = [header.map(csvEscape).join(',')];
-      for (const e of [...rows].reverse()) {
-        const sh = Finance.shares(e);
-        lines.push([
-          e.date, e.description, e.category, childName(e.child_id) || '', parentName(e.paid_by),
-          e.amount.toFixed(2), sh.A.toFixed(2), sh.B.toFixed(2),
-          Finance.splitLabel(e, state.parents), e.status || 'approved', e.tax_deductible ? 'Yes' : 'No', e.notes || '',
-        ].map(csvEscape).join(','));
-      }
-      downloadBlob(lines.join('\r\n'), 'text/csv;charset=utf-8', 'kidledger-expenses-' + todayISO() + '.csv');
-      toast('CSV exported');
-    }
-
-    // ---------------------------------------------------------------------
-    // Expense CRUD (with lock enforcement)
-    // ---------------------------------------------------------------------
     function validateExpense(v) {
-      const errors = [];
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(v.date)) errors.push('a valid date');
-      if (!v.description) errors.push('a description');
-      if (!Number.isFinite(v.amount) || v.amount <= 0) errors.push('a positive amount');
-      if (v.paid_by !== 'A' && v.paid_by !== 'B') errors.push('who paid');
-      return errors;
+      const err = [];
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(v.date)) err.push('a valid date');
+      if (!v.description) err.push('a description');
+      if (!Number.isFinite(v.amount) || v.amount <= 0) err.push('a positive amount');
+      if (v.paid_by !== 'A' && v.paid_by !== 'B') err.push('who paid');
+      return err;
     }
     function addExpense(v) {
       if (isLocked(v.date)) { toast(monthLabel(v.date.slice(0, 7)) + ' is finalized — unlock it first', true); return false; }
-      state.expenses.push(normalizeExpense({
-        id: nextId(), date: v.date, description: v.description, category: v.category || 'Other',
-        amount: v.amount, paid_by: v.paid_by, child_id: v.child_id || null, notes: v.notes || null,
-        split_type: v.split_type || 'even', split_value: v.split_value == null ? null : v.split_value,
-        status: v.status || 'approved', receipt: v.receipt || null, tax_deductible: !!v.tax_deductible,
-      }));
-      save();
-      return true;
+      state.expenses.push(normalizeExpense({ id: nextId(), date: v.date, description: v.description, category: v.category, amount: v.amount, paid_by: v.paid_by, child_id: v.child_id, notes: v.notes || null, split_type: v.split_type || 'even', split_value: v.split_value == null ? null : v.split_value, status: v.status || 'approved', receipt: v.receipt || null, tax_deductible: !!v.tax_deductible }));
+      save(); return true;
     }
     function updateExpense(id, v) {
       const e = state.expenses.find((x) => String(x.id) === String(id));
       if (!e) return false;
       if (isLocked(e.date) || isLocked(v.date)) { toast('That month is finalized — unlock it first', true); return false; }
-      Object.assign(e, {
-        date: v.date, description: v.description, category: v.category || 'Other',
-        amount: v.amount, paid_by: v.paid_by, child_id: v.child_id || null, notes: v.notes || null,
-        split_type: v.split_type || 'even', split_value: v.split_value == null ? null : v.split_value,
-        status: v.status || 'approved', receipt: v.receipt || null, tax_deductible: !!v.tax_deductible,
-      });
-      save();
-      return true;
+      Object.assign(e, { date: v.date, description: v.description, category: v.category, amount: v.amount, paid_by: v.paid_by, child_id: v.child_id, notes: v.notes || null, split_type: v.split_type || 'even', split_value: v.split_value == null ? null : v.split_value, status: v.status || 'approved', receipt: v.receipt || null, tax_deductible: !!v.tax_deductible });
+      save(); return true;
     }
-    function deleteExpense(id) {
-      const e = state.expenses.find((x) => String(x.id) === String(id));
-      if (!e) return;
-      if (isLocked(e.date)) { toast('That month is finalized — unlock it first', true); return; }
-      state.expenses = state.expenses.filter((x) => String(x.id) !== String(id));
-      save();
-      renderAll();
-      toast('Deleted');
-    }
-    function toggleDispute(id) {
-      const e = state.expenses.find((x) => String(x.id) === String(id));
-      if (!e) return;
-      if (isLocked(e.date)) { toast('That month is finalized — unlock it first', true); return; }
-      e.status = e.status === 'disputed' ? 'approved' : 'disputed';
-      save();
-      renderAll();
-      toast(e.status === 'disputed' ? 'Marked disputed (excluded from balance)' : 'Approved (counts toward balance)');
+    function deleteExpense(id) { const e = state.expenses.find((x) => String(x.id) === String(id)); if (!e) return; if (isLocked(e.date)) { toast('That month is finalized — unlock it first', true); return; } state.expenses = state.expenses.filter((x) => String(x.id) !== String(id)); save(); renderAll(); toast('Deleted'); }
+    function toggleDispute(id) { const e = state.expenses.find((x) => String(x.id) === String(id)); if (!e) return; if (isLocked(e.date)) { toast('That month is finalized — unlock it first', true); return; } e.status = e.status === 'disputed' ? 'approved' : 'disputed'; save(); renderAll(); toast(e.status === 'disputed' ? 'Marked disputed' : 'Approved'); }
+
+    function csvEscape(v) { const s = String(v == null ? '' : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+    function downloadBlob(content, type, filename) { const b = new Blob([content], { type }); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 1000); }
+    function exportCsv() {
+      const rows = filteredExpenses();
+      if (!rows.length) { toast('Nothing to export', true); return; }
+      const header = ['Date', 'Description', 'Category', 'For', 'Paid by', 'Amount', state.parents.A + ' share', state.parents.B + ' share', 'Split', 'Status', 'Tax-relevant', 'Notes'];
+      const lines = [header.map(csvEscape).join(',')];
+      for (const e of [...rows].reverse()) { const sh = Finance.shares(e); lines.push([e.date, e.description, e.category, childName(e.child_id), parentName(e.paid_by), e.amount.toFixed(2), sh.A.toFixed(2), sh.B.toFixed(2), Finance.splitLabel(e, state.parents), e.status || 'approved', e.tax_deductible ? 'Yes' : 'No', e.notes || ''].map(csvEscape).join(',')); }
+      downloadBlob(lines.join('\r\n'), 'text/csv;charset=utf-8', 'kidledger-expenses-' + todayISO() + '.csv'); toast('CSV exported');
     }
 
-    // ---------------------------------------------------------------------
-    // Payments
-    // ---------------------------------------------------------------------
-    function renderPayments() {
-      const list = $('#paymentList');
-      const rows = paymentsDesc();
-      if (!rows.length) { list.innerHTML = '<div class="empty">No settlement payments recorded yet.</div>'; return; }
-      list.innerHTML = rows.map((p) => {
-        const locked = isLocked(p.date);
-        return '<div class="list-item"><span class="pill pay">Payment</span>' +
-          '<div class="li-main"><div class="li-title">' + esc(parentName(p.from_parent)) + ' → ' + esc(parentName(p.to_parent)) + (locked ? ' <span class="pill tiny">🔒</span>' : '') + '</div>' +
-          '<div class="li-sub">' + fmtDate(p.date) + (p.method ? ' · ' + esc(p.method) : '') + (p.notes ? ' · ' + esc(p.notes) : '') + '</div></div>' +
-          '<div class="li-amount">' + money(p.amount) + '</div>' +
-          '<button class="mini-btn danger" data-del-payment="' + p.id + '">Delete</button></div>';
+    // ===================================================================
+    // Payments & adjustments
+    // ===================================================================
+    function renderLedger() {
+      const items = [
+        ...state.payments.map((p) => ({ k: 'p', date: p.date, id: p.id, d: p })),
+        ...state.adjustments.map((a) => ({ k: 'a', date: a.date, id: a.id, d: a })),
+      ].sort((x, y) => y.date.localeCompare(x.date) || y.id - x.id);
+      const el = $('#ledgerList');
+      if (!items.length) { el.innerHTML = '<div class="empty">No payments or adjustments yet.</div>'; return; }
+      el.innerHTML = items.map((it) => {
+        if (it.k === 'p') { const p = it.d; return '<div class="li"><div class="avatar pay">↔</div><div class="main"><div class="t">Payment · ' + esc(parentName(p.from_parent)) + ' → ' + esc(parentName(p.to_parent)) + (isLocked(p.date) ? ' 🔒' : '') + '</div><div class="s">' + fmtDate(p.date) + ' · for ' + esc(childName(p.child_id)) + (p.method ? ' · ' + esc(p.method) : '') + (p.notes ? ' · ' + esc(p.notes) : '') + '</div></div><div class="amt">' + money(p.amount) + '</div><button class="mini danger" data-del-payment="' + p.id + '">Del</button></div>'; }
+        const a = it.d; return '<div class="li"><div class="avatar adj">±</div><div class="main"><div class="t">' + esc(a.label || 'Adjustment') + (isLocked(a.date) ? ' 🔒' : '') + '</div><div class="s">' + fmtDate(a.date) + ' · owed to ' + esc(parentName(a.favor)) + ' · for ' + esc(childName(a.child_id)) + (a.notes ? ' · ' + esc(a.notes) : '') + '</div></div><div class="amt">' + money(a.amount) + '</div><button class="mini danger" data-del-adjustment="' + a.id + '">Del</button></div>';
       }).join('');
     }
 
-    // ---------------------------------------------------------------------
-    // Settings: names, children, backup
-    // ---------------------------------------------------------------------
-    function renderSettings() {
-      $('#settingsForm').parent_a_name.value = state.parents.A;
-      $('#settingsForm').parent_b_name.value = state.parents.B;
-    }
-    function renderChildren() {
-      $('#childList').innerHTML = state.children.length
-        ? state.children.map((c) => '<span class="chip">' + esc(c.name) + '<button data-del-child="' + c.id + '" aria-label="Remove">✕</button></span>').join('')
-        : '<span class="muted">No children added yet.</span>';
-    }
+    // ===================================================================
+    // Settings: names, children, categories, backup
+    // ===================================================================
+    function renderSettings() { $('#settingsForm').parent_a_name.value = state.parents.A; $('#settingsForm').parent_b_name.value = state.parents.B; }
+    function renderChildren() { $('#childList').innerHTML = state.children.length ? state.children.map((c) => '<span class="chip">' + esc(c.name) + '<button data-del-child="' + c.id + '" aria-label="Remove">✕</button></span>').join('') : '<span class="muted">No children yet.</span>'; }
+    function renderCategories() { $('#categoryList').innerHTML = state.categories.map((c) => '<span class="chip">' + esc(c) + '<button data-del-cat="' + esc(c) + '" aria-label="Remove">✕</button></span>').join(''); }
 
-    function downloadBlob(content, type, filename) {
-      const blob = new Blob([content], { type });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }
-    function exportBackup() {
-      downloadBlob(JSON.stringify(state, null, 2), 'application/json', 'kidledger-backup-' + todayISO() + '.json');
-      toast('Backup downloaded');
-    }
+    function exportBackup() { downloadBlob(JSON.stringify(state, null, 2), 'application/json', 'kidledger-backup-' + todayISO() + '.json'); toast('Backup downloaded'); }
     function importBackup(file) {
-      const reader = new FileReader();
-      reader.onload = () => {
+      const r = new FileReader();
+      r.onload = () => {
         try {
-          const data = JSON.parse(reader.result);
+          const data = JSON.parse(r.result);
           if (!data || !Array.isArray(data.expenses) || !Array.isArray(data.payments)) throw new Error('Not a valid KidLedger backup');
-          if (!confirm('Import this backup? It will replace all current data in this browser.')) return;
-          state = Object.assign(blankState(), data, {
-            parents: Object.assign({ A: 'Parent A', B: 'Parent B' }, data.parents || {}),
-            locked_months: Array.isArray(data.locked_months) ? data.locked_months : [],
-          });
-          state.expenses = state.expenses.map(normalizeExpense);
-          const maxId = Math.max(0, ...state.expenses.map((e) => e.id || 0), ...state.payments.map((p) => p.id || 0), ...state.children.map((c) => c.id || 0));
+          if (!confirm('Import this backup? It replaces all current data in this browser.')) return;
+          state = migrate(Object.assign(blankState(), data, { parents: Object.assign({ A: 'Parent A', B: 'Parent B' }, data.parents || {}), locked_months: Array.isArray(data.locked_months) ? data.locked_months : [], recurring: Array.isArray(data.recurring) ? data.recurring : [] }));
+          const maxId = Math.max(0, ...state.expenses.map((e) => e.id || 0), ...state.payments.map((p) => p.id || 0), ...state.adjustments.map((a) => a.id || 0), ...state.children.map((c) => c.id || 0), ...state.recurring.map((t) => t.id || 0));
           if (!state.seq || state.seq < maxId) state.seq = maxId;
-          save();
-          renderAll();
-          toast('Backup imported');
-        } catch (e) {
-          toast('Import failed: ' + e.message, true);
-        }
+          save(); renderAll(); toast('Backup imported');
+        } catch (e) { toast('Import failed: ' + e.message, true); }
       };
-      reader.readAsText(file);
+      r.readAsText(file);
     }
 
-    // ---------------------------------------------------------------------
+    // ===================================================================
     // Receipts
-    // ---------------------------------------------------------------------
-    const RECEIPT_MAX = 3 * 1024 * 1024; // 3 MB stored cap
+    // ===================================================================
+    const RECEIPT_MAX = 3 * 1024 * 1024;
     function fileToReceipt(file, cb) {
       if (file.type && file.type.indexOf('image/') === 0) {
-        const url = URL.createObjectURL(file);
-        const img = new Image();
-        img.onload = () => {
-          const maxDim = 1400;
-          let w = img.width, h = img.height;
-          if (w > maxDim || h > maxDim) { const s = maxDim / Math.max(w, h); w = Math.round(w * s); h = Math.round(h * s); }
-          const canvas = document.createElement('canvas');
-          canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          URL.revokeObjectURL(url);
-          cb({ name: file.name, type: 'image/jpeg', data: canvas.toDataURL('image/jpeg', 0.82) });
-        };
+        const url = URL.createObjectURL(file), img = new Image();
+        img.onload = () => { const max = 1400; let w = img.width, h = img.height; if (w > max || h > max) { const s = max / Math.max(w, h); w = Math.round(w * s); h = Math.round(h * s); } const cv = document.createElement('canvas'); cv.width = w; cv.height = h; cv.getContext('2d').drawImage(img, 0, 0, w, h); URL.revokeObjectURL(url); cb({ name: file.name, type: 'image/jpeg', data: cv.toDataURL('image/jpeg', 0.82) }); };
         img.onerror = () => { URL.revokeObjectURL(url); cb(null, 'Could not read that image'); };
         img.src = url;
       } else {
         if (file.size > RECEIPT_MAX) { cb(null, 'File too large (max 3 MB)'); return; }
-        const reader = new FileReader();
-        reader.onload = () => cb({ name: file.name, type: file.type || 'application/octet-stream', data: reader.result });
-        reader.onerror = () => cb(null, 'Could not read that file');
-        reader.readAsDataURL(file);
+        const rd = new FileReader(); rd.onload = () => cb({ name: file.name, type: file.type || 'application/octet-stream', data: rd.result }); rd.onerror = () => cb(null, 'Could not read that file'); rd.readAsDataURL(file);
       }
     }
-    function openReceipt(receipt) {
-      $('#receiptModalTitle').textContent = receipt.name || 'Receipt';
-      const body = $('#receiptBody');
-      if (receipt.type && receipt.type.indexOf('image/') === 0) {
-        body.innerHTML = '<img alt="Receipt" src="' + receipt.data + '" />';
-      } else {
-        body.innerHTML = '<iframe title="Receipt" src="' + receipt.data + '"></iframe>' +
-          '<p class="muted" style="margin-top:10px">If the preview is blank, <a class="link" id="receiptDownload" role="button">download the file</a> instead.</p>';
-      }
+    function openReceipt(rc) {
+      $('#receiptModalTitle').textContent = rc.name || 'Receipt';
+      $('#receiptBody').innerHTML = (rc.type && rc.type.indexOf('image/') === 0) ? '<img alt="Receipt" src="' + rc.data + '" />' : '<iframe title="Receipt" src="' + rc.data + '"></iframe>';
       $('#receiptModal').hidden = false;
-      const dl = $('#receiptDownload');
-      if (dl) dl.addEventListener('click', () => downloadBlob(dataUrlToBlobParts(receipt.data), receipt.type, receipt.name || 'receipt'));
-    }
-    function dataUrlToBlobParts(dataUrl) {
-      const [meta, b64] = dataUrl.split(',');
-      const bin = atob(b64);
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      return bytes;
     }
 
-    // ---------------------------------------------------------------------
-    // Statement + locking
-    // ---------------------------------------------------------------------
-    function loadStatement() {
-      const month = $('#statementMonth').value || thisMonth();
-      $('#statementMonth').value = month;
-      const out = $('#statementOutput');
-      const s = Finance.buildStatement(month, enrichedExpenses(), state.payments, state.parents);
-      out.dataset.loaded = '1';
-      out.innerHTML = renderStatement(s);
-      $('#lockStatementBtn').textContent = state.locked_months.includes(month) ? 'Unlock month' : 'Finalize month';
+    // ===================================================================
+    // Reports
+    // ===================================================================
+    function reportSet() {
+      const range = $('#reportRange').value;
+      let list = enrichedExpenses().filter((e) => e.status !== 'disputed');
+      if (range === 'year') list = list.filter((e) => e.date.slice(0, 4) === thisYear());
+      else if (range === 'month') list = list.filter((e) => e.date.slice(0, 7) === thisMonth());
+      return list;
     }
-    function toggleLock() {
-      const month = $('#statementMonth').value || thisMonth();
-      const i = state.locked_months.indexOf(month);
-      if (i >= 0) {
-        if (!confirm('Unlock ' + monthLabel(month) + '? You will be able to edit its expenses and payments again.')) return;
-        state.locked_months.splice(i, 1);
-        toast(monthLabel(month) + ' unlocked');
-      } else {
-        if (!confirm('Finalize ' + monthLabel(month) + '? Its expenses and payments will be locked from edits until you unlock it.')) return;
-        state.locked_months.push(month);
-        toast(monthLabel(month) + ' finalized');
-      }
-      save();
-      renderAll();
-      loadStatement();
-    }
-    function fmtSigned(n) { return n === 0 ? money(0) : (n > 0 ? '+' : '−') + money(Math.abs(n)); }
-
-    function renderStatement(s) {
-      const closing = s.closing.summary;
-      const opening = s.opening.summary;
-      const locked = state.locked_months.includes(s.month);
-      const items = s.line_items.length ? s.line_items.map((li) => '<tr>' +
-        '<td>' + fmtDate(li.date) + '</td>' +
-        '<td>' + esc(li.description) + (li.child ? '<div class="li-sub">' + esc(li.child) + '</div>' : '') + (li.has_receipt ? '<div class="li-sub">📎 receipt on file</div>' : '') + '</td>' +
-        '<td>' + esc(li.category) + '</td><td>' + esc(li.paid_by_name) + '</td>' +
-        '<td>' + esc(li.split_label) + '</td>' +
-        '<td class="num">' + money(li.amount) + '</td>' +
-        '<td class="num">' + money(li.owed_amount) + '</td></tr>').join('')
-        : '<tr><td colspan="7" class="empty">No expenses this month.</td></tr>';
-
-      const disputed = s.disputed_items.length ? '<div class="stmt-note">⚠ ' + s.disputed_items.length + ' disputed expense(s) totaling ' + money(s.totals.disputed_total) +
-        ' are excluded from this statement until approved: ' + esc(s.disputed_items.map((d) => d.description).join(', ')) + '.</div>' : '';
-
-      const payments = s.payments.length ? '<div class="stmt-section-title">Settlement payments</div>' +
-        '<table><thead><tr><th>Date</th><th>From</th><th>To</th><th>Method</th><th class="num">Amount</th></tr></thead><tbody>' +
-        s.payments.map((p) => '<tr><td>' + fmtDate(p.date) + '</td><td>' + esc(p.from_name) + '</td><td>' + esc(p.to_name) + '</td>' +
-          '<td>' + (p.method ? esc(p.method) : '—') + '</td><td class="num">' + money(p.amount) + '</td></tr>').join('') + '</tbody></table>' : '';
-
-      return '<div class="stmt"><div class="stmt-head">' +
-        '<div><h2>Billing Statement</h2><div class="stmt-brand">KidLedger · ' + esc(s.names.A) + ' &amp; ' + esc(s.names.B) + '</div>' +
-          (locked ? '<div class="lock-badge">🔒 Finalized</div>' : '') + '</div>' +
-        '<div class="stmt-period"><div class="stmt-brand">Statement period</div><div class="big">' + monthLabel(s.month) + '</div></div></div>' +
-        '<div class="stmt-summary">' +
-          '<div class="box"><div class="k">Balance brought forward</div><div class="v">' + (opening.settled ? 'Settled' : money(opening.amount)) + '</div>' +
-            '<div class="li-sub">' + (opening.settled ? 'No prior balance' : esc(opening.text)) + '</div></div>' +
-          '<div class="box"><div class="k">Total spent this month</div><div class="v">' + money(s.totals.total_spent) + '</div>' +
-            '<div class="li-sub">' + s.totals.expense_count + ' expense(s) · ' + esc(s.names.A) + ' ' + money(s.totals.responsibility_a) + ' / ' + esc(s.names.B) + ' ' + money(s.totals.responsibility_b) + '</div></div>' +
-        '</div>' +
-        '<div class="stmt-section-title">Expenses</div>' +
-        '<table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Paid by</th><th>Split</th><th class="num">Amount</th><th class="num">Owed to payer</th></tr></thead><tbody>' + items + '</tbody></table>' +
-        disputed + payments +
-        '<div class="stmt-section-title">Reconciliation</div>' +
-        totalLine(esc(s.names.A) + ' paid this month', money(s.totals.paid_by_a)) +
-        totalLine(esc(s.names.B) + ' paid this month', money(s.totals.paid_by_b)) +
-        totalLine('Balance brought forward', opening.settled ? money(0) : (opening.debtor === 'B' ? '+' : '−') + money(opening.amount)) +
-        totalLine("Net change from this month's expenses", fmtSigned(s.net_from_expenses)) +
-        (s.net_from_payments !== 0 ? totalLine('Settlement payments applied', fmtSigned(s.net_from_payments)) : '') +
-        '<div class="stmt-callout ' + (closing.settled ? 'settled' : '') + '">' +
-          (closing.settled ? '✓ Balance is fully settled as of month end.' : 'Amount due: ' + esc(closing.text)) + '</div>' +
-        '<p class="muted" style="margin-top:18px">Positive figures increase what ' + esc(s.names.B) + ' owes ' + esc(s.names.A) +
-          '; negative figures move the balance the other way. Generated by KidLedger on ' + fmtDate(todayISO()) + '.</p>' +
-      '</div>';
-    }
-    function totalLine(label, val) { return '<div class="stmt-total-line"><span>' + label + '</span><span>' + val + '</span></div>'; }
-
-    // ---------------------------------------------------------------------
-    // Expense modal
-    // ---------------------------------------------------------------------
-    let modalReceipt = null;
-    function updateSplitUI() {
-      const form = $('#expenseForm');
-      const type = form.split_type.value;
-      $('#splitPercentWrap').hidden = type !== 'percent';
-      $('#splitAmountWrap').hidden = type !== 'amount';
-      $('#splitFullWrap').hidden = type !== 'full';
-      $('#splitPercentLabel').textContent = state.parents.A + "'s share (%)";
-      $('#splitAmountLabel').textContent = state.parents.A + "'s share ($)";
-      // Live preview
-      const amt = Number(form.amount.value) || 0;
-      let split_value = null;
-      if (type === 'percent') split_value = Number(form.split_percent.value) || 0;
-      else if (type === 'amount') split_value = Number(form.split_amount.value) || 0;
-      else if (type === 'full') split_value = form.split_full.value;
-      const sh = Finance.shares({ amount: amt, split_type: type, split_value });
-      $('#splitPreview').textContent = amt
-        ? state.parents.A + ': ' + money(sh.A) + '  ·  ' + state.parents.B + ': ' + money(sh.B)
-        : 'Enter an amount to preview the split.';
-    }
-    function setReceiptStatus() {
-      $('#receiptStatus').innerHTML = modalReceipt
-        ? '📎 ' + esc(modalReceipt.name || 'attached') + ' <a class="link" id="removeReceipt" role="button">remove</a>'
-        : '<span class="muted">None attached</span>';
-      const rm = $('#removeReceipt');
-      if (rm) rm.addEventListener('click', () => { modalReceipt = null; $('#receiptInput').value = ''; setReceiptStatus(); });
-    }
-    function openExpenseModal(expense) {
-      const form = $('#expenseForm');
-      form.reset();
-      modalReceipt = expense ? (expense.receipt || null) : null;
-      $('#catFull').innerHTML = categoryOptions(expense ? expense.category : 'Other');
-      $('#childFull').innerHTML = childOptions(expense ? expense.child_id : '');
-      $('#paidByFull').innerHTML = parentOptions(expense ? expense.paid_by : 'A');
-      $('#splitFull').innerHTML = parentOptions(expense && expense.split_type === 'full' ? expense.split_value : 'A');
-      $('#expenseModalTitle').textContent = expense ? 'Edit expense' : 'New expense';
-      form.id.value = expense ? expense.id : '';
-      form.date.value = expense ? expense.date : todayISO();
-      form.amount.value = expense ? expense.amount : '';
-      form.description.value = expense ? expense.description : '';
-      form.notes.value = expense && expense.notes ? expense.notes : '';
-      form.split_type.value = expense ? (expense.split_type || 'even') : 'even';
-      form.split_percent.value = expense && expense.split_type === 'percent' ? expense.split_value : '';
-      form.split_amount.value = expense && expense.split_type === 'amount' ? expense.split_value : '';
-      $('#statusDisputed').checked = expense ? expense.status === 'disputed' : false;
-      $('#taxDeductible').checked = expense ? !!expense.tax_deductible : false;
-      setReceiptStatus();
-      updateSplitUI();
-      $('#expenseModal').hidden = false;
-    }
-    function closeExpenseModal() { $('#expenseModal').hidden = true; }
-    function readModalExpense(f) {
-      const type = f.split_type.value;
-      let split_value = null;
-      if (type === 'percent') split_value = Number(f.split_percent.value) || 0;
-      else if (type === 'amount') split_value = Number(f.split_amount.value) || 0;
-      else if (type === 'full') split_value = f.split_full.value;
-      return {
-        date: f.date.value.trim(), amount: Number(f.amount.value), description: f.description.value.trim(),
-        category: f.category.value, child_id: f.child_id.value ? Number(f.child_id.value) : null,
-        paid_by: f.paid_by.value, split_type: type, split_value,
-        status: f.status_disputed.checked ? 'disputed' : 'approved',
-        tax_deductible: f.tax_deductible.checked,
-        receipt: modalReceipt, notes: f.notes.value.trim(),
-      };
-    }
-
-    // ---------------------------------------------------------------------
-    // Recurring templates
-    // ---------------------------------------------------------------------
-    function updateRecSplitUI() {
-      const form = $('#recurringForm');
-      const type = form.split_type.value;
-      $('#recPercentWrap').hidden = type !== 'percent';
-      $('#recAmountWrap').hidden = type !== 'amount';
-      $('#recFullWrap').hidden = type !== 'full';
-      $('#recPercentLabel').textContent = state.parents.A + "'s share (%)";
-      $('#recAmountLabel').textContent = state.parents.A + "'s share ($)";
-    }
-    function renderRecurring() {
-      const list = $('#recurringList');
-      if (!state.recurring.length) { list.innerHTML = '<div class="empty">No recurring expenses yet.</div>'; return; }
-      list.innerHTML = state.recurring.map((t) => {
-        const range = monthLabel(t.start_month) + (t.end_month ? ' – ' + monthLabel(t.end_month) : ' onward');
-        return '<div class="rec-item' + (t.active ? '' : ' paused') + '">' +
-          '<div class="rec-main"><div class="li-title">' + esc(t.description) +
-            ' <span class="pill tiny">' + esc(Finance.splitLabel(t, state.parents)) + '</span>' +
-            (t.tax_deductible ? ' <span class="pill tiny">🏷 tax</span>' : '') +
-            (t.active ? '' : ' <span class="pill warn tiny">Paused</span>') + '</div>' +
-          '<div class="li-sub">' + money(t.amount) + ' · monthly on day ' + t.day + ' · paid by ' + esc(parentName(t.paid_by)) + ' · ' + range + '</div></div>' +
-          '<div class="row-actions">' +
-            '<button class="mini-btn" data-rec-toggle="' + t.id + '">' + (t.active ? 'Pause' : 'Resume') + '</button>' +
-            '<button class="mini-btn danger" data-rec-del="' + t.id + '">Delete</button>' +
-          '</div></div>';
-      }).join('');
-    }
-    function addRecurring(v) {
-      state.recurring.push({
-        id: nextId(), description: v.description, amount: v.amount, day: v.day,
-        category: v.category, child_id: v.child_id || null, paid_by: v.paid_by,
-        split_type: v.split_type, split_value: v.split_value,
-        start_month: v.start_month, end_month: v.end_month || null,
-        tax_deductible: !!v.tax_deductible, active: true, generated: [],
-      });
-      save();
-    }
-
-    // ---------------------------------------------------------------------
-    // Reports: charts + tax summary
-    // ---------------------------------------------------------------------
-    function approvedExpenses() { return state.expenses.filter((e) => e.status !== 'disputed'); }
-
     function renderReports() {
-      // Monthly spending: last 6 months ending this month.
-      const months = [];
-      let m = thisMonth();
-      for (let i = 0; i < 6; i++) { months.unshift(m); m = prevMonthStr(m); }
-      const totals = months.map((mm) => approvedExpenses().filter((e) => e.date.slice(0, 7) === mm).reduce((s, e) => s + e.amount, 0));
+      // Monthly chart (last 6 months, approved)
+      const months = []; let m = thisMonth(); for (let i = 0; i < 6; i++) { months.unshift(m); m = prevMonthStr(m); }
+      const approved = state.expenses.filter((e) => e.status !== 'disputed');
+      const totals = months.map((mm) => approved.filter((e) => e.date.slice(0, 7) === mm).reduce((t, e) => t + e.amount, 0));
       const max = Math.max(1, ...totals);
-      $('#chartMonthly').innerHTML = months.map((mm, i) => {
-        const v = totals[i];
-        const h = Math.round(v / max * 150);
-        const short = new Date(Number(mm.slice(0, 4)), Number(mm.slice(5, 7)) - 1, 1).toLocaleDateString('en-US', { month: 'short' });
-        return '<div class="cbar-col"><div class="cbar-wrap">' +
-          '<div class="cbar-val">' + (v ? '$' + Math.round(v) : '') + '</div>' +
-          '<div class="cbar" style="height:' + h + 'px" title="' + esc(monthLabel(mm)) + ': ' + money(v) + '"></div>' +
-          '</div><div class="cbar-x">' + short + '</div></div>';
-      }).join('');
+      $('#chartMonthly').innerHTML = months.map((mm, i) => { const v = totals[i], h = Math.round(v / max * 145); const sh = new Date(+mm.slice(0, 4), +mm.slice(5, 7) - 1, 1).toLocaleDateString('en-US', { month: 'short' }); return '<div class="cbar-col"><div class="cbar-wrap"><div class="cbar-val">' + (v ? '$' + Math.round(v) : '') + '</div><div class="cbar" style="height:' + h + 'px" title="' + esc(monthLabel(mm)) + ': ' + money(v) + '"></div></div><div class="cbar-x">' + sh + '</div></div>'; }).join('');
 
-      // Spending by category (all-time approved).
-      const byCat = {};
-      for (const e of approvedExpenses()) byCat[e.category] = (byCat[e.category] || 0) + e.amount;
-      const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
-      const cmax = Math.max(1, ...cats.map((c) => c[1]));
-      $('#chartCategory').innerHTML = cats.length
-        ? cats.map(([k, v]) => '<div class="hbar-row"><span class="hbar-label" title="' + esc(k) + '">' + esc(k) + '</span>' +
-            '<div class="hbar-track"><div class="hbar-fill" style="width:' + Math.round(v / cmax * 100) + '%"></div></div>' +
-            '<span class="hbar-val">' + money(v) + '</span></div>').join('')
-        : '<div class="empty">No expenses yet.</div>';
+      const set = reportSet();
+      // By child
+      const kids = Finance.summarizeByChild(set, state.parents);
+      $('#reportChild').innerHTML = kids.length ? '<div class="table-wrap"><table><thead><tr><th>Child</th><th class="num">Total</th><th class="num">' + esc(state.parents.A) + '</th><th class="num">' + esc(state.parents.B) + '</th></tr></thead><tbody>' + kids.map((r) => '<tr><td>' + esc(r.name) + '</td><td class="num">' + money(r.total) + '</td><td class="num">' + money(r.respA) + '</td><td class="num">' + money(r.respB) + '</td></tr>').join('') + '</tbody></table></div>' : '<div class="empty">No expenses in range.</div>';
+      // By category (with bars)
+      const cats = Finance.summarizeByCategory(set);
+      const cmax = Math.max(1, ...cats.map((c) => c.total));
+      $('#reportCategory').innerHTML = cats.length ? '<div class="hbars">' + cats.map((c) => '<div class="hbar-row"><span class="hbar-label" title="' + esc(c.name) + '">' + esc(c.name) + '</span><div class="hbar-track"><div class="hbar-fill" style="width:' + Math.round(c.total / cmax * 100) + '%"></div></div><span class="hbar-val">' + money(c.total) + '</span></div>').join('') + '</div>' : '<div class="empty">No expenses in range.</div>';
 
       renderTaxSummary();
     }
-
     function taxByYear() {
-      const flagged = approvedExpenses().filter((e) => e.tax_deductible);
+      const flagged = state.expenses.filter((e) => e.status !== 'disputed' && e.tax_deductible);
       const years = {};
-      for (const e of flagged) {
-        const y = e.date.slice(0, 4);
-        const sh = Finance.shares(e);
-        if (!years[y]) years[y] = { count: 0, total: 0, a: 0, b: 0 };
-        years[y].count++;
-        years[y].total += e.amount;
-        years[y].a += sh.A;
-        years[y].b += sh.B;
-      }
+      for (const e of flagged) { const y = e.date.slice(0, 4), sh = Finance.shares(e); if (!years[y]) years[y] = { count: 0, total: 0, a: 0, b: 0 }; years[y].count++; years[y].total += e.amount; years[y].a += sh.A; years[y].b += sh.B; }
       return Object.entries(years).sort((x, y) => y[0].localeCompare(x[0]));
     }
     function renderTaxSummary() {
       const rows = taxByYear();
-      if (!rows.length) { $('#taxSummary').innerHTML = '<div class="empty">No expenses flagged tax-relevant yet. Tick “Tax-relevant” on an expense to include it here.</div>'; return; }
-      $('#taxSummary').innerHTML = '<table><thead><tr><th>Year</th><th class="num">Items</th><th class="num">Total</th>' +
-        '<th class="num">' + esc(state.parents.A) + ' share</th><th class="num">' + esc(state.parents.B) + ' share</th></tr></thead><tbody>' +
-        rows.map(([y, d]) => '<tr><td>' + y + '</td><td class="num">' + d.count + '</td><td class="num">' + money(d.total) +
-          '</td><td class="num">' + money(d.a) + '</td><td class="num">' + money(d.b) + '</td></tr>').join('') +
-        '</tbody></table>';
+      $('#taxSummary').innerHTML = rows.length ? '<table><thead><tr><th>Year</th><th class="num">Items</th><th class="num">Total</th><th class="num">' + esc(state.parents.A) + '</th><th class="num">' + esc(state.parents.B) + '</th></tr></thead><tbody>' + rows.map(([y, d]) => '<tr><td>' + y + '</td><td class="num">' + d.count + '</td><td class="num">' + money(d.total) + '</td><td class="num">' + money(d.a) + '</td><td class="num">' + money(d.b) + '</td></tr>').join('') + '</tbody></table>' : '<div class="empty">No expenses flagged tax-relevant yet.</div>';
+    }
+    function exportReportCsv(kind) {
+      const set = reportSet();
+      let header, rows;
+      if (kind === 'child') { header = ['Child', 'Expenses', 'Total', state.parents.A + ' share', state.parents.B + ' share']; rows = Finance.summarizeByChild(set, state.parents).map((r) => [r.name, r.count, r.total.toFixed(2), r.respA.toFixed(2), r.respB.toFixed(2)]); }
+      else { header = ['Category', 'Expenses', 'Total', state.parents.A + ' share', state.parents.B + ' share']; rows = Finance.summarizeByCategory(set).map((r) => [r.name, r.count, r.total.toFixed(2), r.respA.toFixed(2), r.respB.toFixed(2)]); }
+      if (!rows.length) { toast('Nothing to export', true); return; }
+      downloadBlob([header, ...rows].map((r) => r.map(csvEscape).join(',')).join('\r\n'), 'text/csv;charset=utf-8', 'kidledger-' + kind + '-report-' + todayISO() + '.csv'); toast('CSV exported');
     }
     function exportTaxCsv() {
-      const rows = taxByYear();
-      if (!rows.length) { toast('No tax-relevant expenses to export', true); return; }
+      const rows = taxByYear(); if (!rows.length) { toast('Nothing to export', true); return; }
       const header = ['Year', 'Items', 'Total', state.parents.A + ' share', state.parents.B + ' share'];
-      const lines = [header.map(csvEscape).join(',')];
-      for (const [y, d] of rows) lines.push([y, d.count, d.total.toFixed(2), d.a.toFixed(2), d.b.toFixed(2)].map(csvEscape).join(','));
-      downloadBlob(lines.join('\r\n'), 'text/csv;charset=utf-8', 'kidledger-tax-summary-' + todayISO() + '.csv');
-      toast('Tax summary exported');
+      downloadBlob([header.map(csvEscape).join(','), ...rows.map(([y, d]) => [y, d.count, d.total.toFixed(2), d.a.toFixed(2), d.b.toFixed(2)].map(csvEscape).join(','))].join('\r\n'), 'text/csv;charset=utf-8', 'kidledger-tax-summary-' + todayISO() + '.csv'); toast('Tax summary exported');
     }
-    function prevMonthStr(mm) { let [y, mo] = mm.split('-').map(Number); mo--; if (mo < 1) { mo = 12; y--; } return y + '-' + String(mo).padStart(2, '0'); }
 
-    // ---------------------------------------------------------------------
-    // Re-render everything
-    // ---------------------------------------------------------------------
+    // ===================================================================
+    // Recurring
+    // ===================================================================
+    function updateRecSplitUI() { const f = $('#recurringForm'), t = f.split_type.value; $('#recPercentWrap').hidden = t !== 'percent'; $('#recAmountWrap').hidden = t !== 'amount'; $('#recFullWrap').hidden = t !== 'full'; $('#recPercentLabel').textContent = state.parents.A + "'s share (%)"; $('#recAmountLabel').textContent = state.parents.A + "'s share ($)"; }
+    function renderRecurring() {
+      const el = $('#recurringList');
+      if (!state.recurring.length) { el.innerHTML = '<div class="empty">No recurring expenses yet.</div>'; return; }
+      el.innerHTML = state.recurring.map((t) => { const range = monthLabel(t.start_month) + (t.end_month ? ' – ' + monthLabel(t.end_month) : ' onward'); return '<div class="li rec-item' + (t.active ? '' : ' paused') + '"><div class="avatar adj">↻</div><div class="main"><div class="t">' + esc(t.description) + ' <span class="pill tiny">' + esc(Finance.splitLabel(t, state.parents)) + '</span>' + (t.tax_deductible ? ' <span class="pill tiny">🏷</span>' : '') + (t.active ? '' : ' <span class="pill warn tiny">Paused</span>') + '</div><div class="s">' + money(t.amount) + ' · day ' + t.day + ' · ' + esc(childName(t.child_id)) + ' · paid by ' + esc(parentName(t.paid_by)) + ' · ' + range + '</div></div><div class="row-actions"><button class="mini" data-rec-toggle="' + t.id + '">' + (t.active ? 'Pause' : 'Resume') + '</button><button class="mini danger" data-rec-del="' + t.id + '">Del</button></div></div>'; }).join('');
+    }
+    function addRecurring(v) { state.recurring.push({ id: nextId(), description: v.description, amount: v.amount, day: v.day, category: v.category, child_id: v.child_id, paid_by: v.paid_by, split_type: v.split_type, split_value: v.split_value, start_month: v.start_month, end_month: v.end_month || null, tax_deductible: !!v.tax_deductible, active: true, generated: [] }); save(); }
+    function generateRecurring() {
+      const cur = thisMonth(); let created = 0;
+      for (const t of state.recurring) {
+        if (!t.active) continue; if (!Array.isArray(t.generated)) t.generated = [];
+        let m = t.start_month, guard = 0;
+        while (m <= cur && (!t.end_month || m <= t.end_month) && guard < 600) {
+          guard++;
+          if (!t.generated.includes(m)) { const date = occurrenceDate(m, t.day); if (!isLocked(date)) { state.expenses.push(normalizeExpense({ id: nextId(), date, description: t.description, amount: Number(t.amount), category: t.category, paid_by: t.paid_by, child_id: t.child_id, split_type: t.split_type || 'even', split_value: t.split_value == null ? null : t.split_value, status: 'approved', tax_deductible: !!t.tax_deductible, recurring_id: t.id, notes: 'Auto (recurring)' })); t.generated.push(m); created++; } }
+          m = nextMonthStr(m);
+        }
+      }
+      if (created) save(); return created;
+    }
+
+    // ===================================================================
+    // Statement (invoice)
+    // ===================================================================
+    function loadStatement() {
+      const month = $('#statementMonth').value || thisMonth();
+      $('#statementMonth').value = month;
+      const s = Finance.buildStatement(month, enrichedExpenses(), enrich(state.payments), state.parents, enrich(state.adjustments));
+      $('#statementOutput').dataset.loaded = '1';
+      $('#statementOutput').innerHTML = renderStatement(s);
+      $('#lockStatementBtn').textContent = state.locked_months.includes(month) ? 'Unlock' : 'Finalize';
+    }
+    function toggleLock() {
+      const month = $('#statementMonth').value || thisMonth(); const i = state.locked_months.indexOf(month);
+      if (i >= 0) { if (!confirm('Unlock ' + monthLabel(month) + '? You can edit its entries again.')) return; state.locked_months.splice(i, 1); toast(monthLabel(month) + ' unlocked'); }
+      else { if (!confirm('Finalize ' + monthLabel(month) + '? Its entries lock until you unlock.')) return; state.locked_months.push(month); toast(monthLabel(month) + ' finalized'); }
+      save(); renderAll(); loadStatement();
+    }
+    function signed(n) { return n === 0 ? money(0) : (n > 0 ? '+' : '−') + money(Math.abs(n)); }
+    function renderStatement(s) {
+      const closing = s.closing.summary, opening = s.opening.summary, locked = state.locked_months.includes(s.month);
+      const items = s.line_items.length ? s.line_items.map((li) => '<tr><td>' + fmtDate(li.date) + '</td><td>' + esc(li.description) + '<div class="s" style="color:var(--muted);font-size:12px;">' + esc(li.child) + ' · ' + esc(li.category) + (li.has_receipt ? ' · 📎' : '') + '</div></td><td>' + esc(li.paid_by_name) + '</td><td>' + esc(li.split_label) + '</td><td class="num">' + money(li.amount) + '</td><td class="num">' + money(li.owed_amount) + '</td></tr>').join('') : '<tr><td colspan="6" class="empty">No expenses this month.</td></tr>';
+      const pay = (s.payments.length || s.adjustments.length) ? '<div class="stmt-sec">Payments &amp; adjustments</div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Detail</th><th>For</th><th class="num">Amount</th></tr></thead><tbody>' +
+        s.payments.map((p) => '<tr><td>' + fmtDate(p.date) + '</td><td>Payment · ' + esc(p.from_name) + ' → ' + esc(p.to_name) + (p.method ? ' (' + esc(p.method) + ')' : '') + '</td><td>' + esc(p.child) + '</td><td class="num">' + money(p.amount) + '</td></tr>').join('') +
+        s.adjustments.map((a) => '<tr><td>' + fmtDate(a.date) + '</td><td>' + esc(a.label) + ' · owed to ' + esc(a.favor_name) + '</td><td>' + esc(a.child) + '</td><td class="num">' + money(a.amount) + '</td></tr>').join('') + '</tbody></table></div>' : '';
+      const disputed = s.disputed_items.length ? '<div class="stmt-note">⚠ ' + s.disputed_items.length + ' disputed item(s) totaling ' + money(s.totals.disputed_total) + ' are excluded until approved.</div>' : '';
+      const byChild = s.by_child.length ? s.by_child.map((r) => '<div class="stmt-recon"><div class="l"><span>' + esc(r.name) + '</span><span>' + money(r.total) + '</span></div></div>').join('') : '<div class="muted">No expenses.</div>';
+      const byCat = s.by_category.length ? s.by_category.map((r) => '<div class="stmt-recon"><div class="l"><span>' + esc(r.name) + '</span><span>' + money(r.total) + '</span></div></div>').join('') : '<div class="muted">No expenses.</div>';
+
+      return '<div class="stmt">' +
+        '<div class="stmt-top"><div class="stmt-mark"><div class="m">🧾</div><div><div class="n">KidLedger</div><div class="p">Shared expense statement</div></div></div>' +
+        '<div class="stmt-title"><div class="h">Statement</div><div class="period">' + monthLabel(s.month) + '</div><div class="date">Prepared ' + fmtDate(todayISO()) + '</div>' + (locked ? '<div class="stmt-badge">🔒 Finalized</div>' : '') + '</div></div>' +
+        '<div class="stmt-parties"><div><div class="k">Between</div><div class="v">' + esc(s.names.A) + '</div></div><div><div class="k">And</div><div class="v">' + esc(s.names.B) + '</div></div></div>' +
+        '<div class="stmt-tiles">' +
+          '<div class="stmt-tile"><div class="k">Brought forward</div><div class="v">' + (opening.settled ? '—' : money(opening.amount)) + '</div></div>' +
+          '<div class="stmt-tile"><div class="k">Charges</div><div class="v">' + money(s.totals.total_spent) + '</div></div>' +
+          '<div class="stmt-tile"><div class="k">Payments</div><div class="v">' + money(Math.abs(s.net_from_payments)) + '</div></div>' +
+          '<div class="stmt-tile"><div class="k">Amount due</div><div class="v">' + (closing.settled ? '$0.00' : money(closing.amount)) + '</div></div>' +
+        '</div>' +
+        '<div class="stmt-sec">Expenses</div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Description</th><th>Paid by</th><th>Split</th><th class="num">Amount</th><th class="num">Owed to payer</th></tr></thead><tbody>' + items + '</tbody></table></div>' +
+        disputed + pay +
+        '<div class="stmt-sec">Breakdown</div><div class="stmt-2col"><div><div class="k" style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">By child</div>' + byChild + '</div><div><div class="k" style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">By category</div>' + byCat + '</div></div>' +
+        '<div class="stmt-sec">Reconciliation</div><div class="stmt-recon">' +
+          '<div class="l"><span>Balance brought forward</span><span>' + (opening.settled ? money(0) : (opening.debtor === 'B' ? '+' : '−') + money(opening.amount)) + '</span></div>' +
+          '<div class="l"><span>Expenses this month</span><span>' + signed(s.net_from_expenses) + '</span></div>' +
+          (s.net_from_payments !== 0 ? '<div class="l"><span>Payments applied</span><span>' + signed(s.net_from_payments) + '</span></div>' : '') +
+          (s.net_from_adjustments !== 0 ? '<div class="l"><span>Adjustments</span><span>' + signed(s.net_from_adjustments) + '</span></div>' : '') +
+          '<div class="l total"><span>Closing balance</span><span>' + (closing.settled ? money(0) : (closing.debtor === 'B' ? '+' : '−') + money(closing.amount)) + '</span></div></div>' +
+        '<div class="stmt-due ' + (closing.settled ? 'settled' : '') + '"><div><div class="dl">' + (closing.settled ? 'Settled' : 'Amount due') + '</div><div class="dw">' + (closing.settled ? 'No balance owing at month end.' : esc(closing.text)) + '</div></div><div class="dv">' + (closing.settled ? '✓' : money(closing.amount)) + '</div></div>' +
+        '<div class="stmt-foot">Positive figures increase what ' + esc(s.names.B) + ' owes ' + esc(s.names.A) + '. Generated by KidLedger on ' + fmtDate(todayISO()) + '.</div>' +
+      '</div>';
+    }
+
+    // ===================================================================
+    // Expense modal
+    // ===================================================================
+    let modalReceipt = null;
+    function updateSplitUI() {
+      const f = $('#expenseForm'), t = f.split_type.value;
+      $('#splitPercentWrap').hidden = t !== 'percent'; $('#splitAmountWrap').hidden = t !== 'amount'; $('#splitFullWrap').hidden = t !== 'full';
+      $('#splitPercentLabel').textContent = state.parents.A + "'s share (%)"; $('#splitAmountLabel').textContent = state.parents.A + "'s share ($)";
+      const amt = Number(f.amount.value) || 0; let sv = null;
+      if (t === 'percent') sv = Number(f.split_percent.value) || 0; else if (t === 'amount') sv = Number(f.split_amount.value) || 0; else if (t === 'full') sv = f.split_full.value;
+      const sh = Finance.shares({ amount: amt, split_type: t, split_value: sv });
+      $('#splitPreview').textContent = amt ? state.parents.A + ': ' + money(sh.A) + '   ·   ' + state.parents.B + ': ' + money(sh.B) : 'Enter an amount to preview the split.';
+    }
+    function setReceiptStatus() { $('#receiptStatus').innerHTML = modalReceipt ? '📎 ' + esc(modalReceipt.name || 'attached') + ' <a class="link" id="removeReceipt" role="button">remove</a>' : 'None attached'; const rm = $('#removeReceipt'); if (rm) rm.addEventListener('click', () => { modalReceipt = null; $('#receiptInput').value = ''; setReceiptStatus(); }); }
+    function openExpenseModal(expense) {
+      const f = $('#expenseForm'); f.reset(); modalReceipt = expense ? (expense.receipt || null) : null;
+      $('#catFull').innerHTML = categoryOptions(expense ? expense.category : state.categories[0]);
+      $('#childFull').innerHTML = assignOptions(expense ? expense.child_id : 'shared');
+      $('#paidByFull').innerHTML = parentOptions(expense ? expense.paid_by : 'A');
+      $('#splitFull').innerHTML = parentOptions(expense && expense.split_type === 'full' ? expense.split_value : 'A');
+      $('#expenseModalTitle').textContent = expense ? 'Edit expense' : 'New expense';
+      f.id.value = expense ? expense.id : ''; f.date.value = expense ? expense.date : todayISO(); f.amount.value = expense ? expense.amount : ''; f.description.value = expense ? expense.description : ''; f.notes.value = expense && expense.notes ? expense.notes : '';
+      f.split_type.value = expense ? (expense.split_type || 'even') : 'even';
+      f.split_percent.value = expense && expense.split_type === 'percent' ? expense.split_value : '';
+      f.split_amount.value = expense && expense.split_type === 'amount' ? expense.split_value : '';
+      $('#statusDisputed').checked = expense ? expense.status === 'disputed' : false;
+      $('#taxDeductible').checked = expense ? !!expense.tax_deductible : false;
+      setReceiptStatus(); updateSplitUI(); $('#expenseModal').hidden = false;
+    }
+    function closeExpenseModal() { $('#expenseModal').hidden = true; }
+    function readModalExpense(f) {
+      const t = f.split_type.value; let sv = null;
+      if (t === 'percent') sv = Number(f.split_percent.value) || 0; else if (t === 'amount') sv = Number(f.split_amount.value) || 0; else if (t === 'full') sv = f.split_full.value;
+      return { date: f.date.value.trim(), amount: Number(f.amount.value), description: f.description.value.trim(), category: f.category.value, child_id: readAssign(f.child_id.value), paid_by: f.paid_by.value, split_type: t, split_value: sv, status: f.status_disputed.checked ? 'disputed' : 'approved', tax_deductible: f.tax_deductible.checked, receipt: modalReceipt, notes: f.notes.value.trim() };
+    }
+
+    // ===================================================================
+    // Cloud sync
+    // ===================================================================
+    function adoptState(obj) { applyingRemote = true; try { state = migrate(Object.assign(blankState(), obj, { parents: Object.assign({ A: 'Parent A', B: 'Parent B' }, obj.parents || {}), locked_months: Array.isArray(obj.locked_months) ? obj.locked_months : [], recurring: Array.isArray(obj.recurring) ? obj.recurring : [] })); saveRaw(); renderAll(); } finally { applyingRemote = false; } }
+    function updateSyncUI(st, msg, meta) {
+      const box = $('#syncStatus'), txt = $('#syncStatusText'), sd = $('#sideDot'), ss = $('#sideSync');
+      const when = meta && meta.lastSyncAt ? new Date(meta.lastSyncAt).toLocaleString() : '';
+      let label = 'Not connected', cls = '', sideCls = '', sideTxt = 'Local only';
+      if (st === 'syncing') { cls = 'busy'; label = 'Syncing…'; sideCls = 'busy'; sideTxt = 'Syncing…'; }
+      else if (st === 'synced') { cls = 'ok'; label = 'Synced' + (when ? ' · ' + when : ''); sideCls = 'ok'; sideTxt = 'Synced'; }
+      else if (st === 'conflict') { cls = 'warn'; label = 'Sync conflict — choose a version'; sideCls = 'warn'; sideTxt = 'Conflict'; }
+      else if (st === 'error') { cls = 'bad'; label = 'Sync error' + (msg ? ': ' + msg : ''); sideCls = 'bad'; sideTxt = 'Sync error'; }
+      else if (st === 'idle') { label = 'Connected — tap Sync now'; sideTxt = 'Connected'; }
+      if (box) { box.className = 'sync-status' + (cls ? ' ' + cls : ''); txt.textContent = label; }
+      if (sd) { sd.className = 'dot' + (sideCls ? ' ' + sideCls : ''); ss.textContent = sideTxt; }
+    }
+    async function handleSyncResult(r) {
+      if (!r) return;
+      if (r.action === 'conflict') { const keepLocal = confirm('Sync conflict:\n\nThis device and Google Drive both changed since the last sync.\n\nOK = keep THIS device (upload)\nCancel = use Google Drive (download)'); await KidLedgerSync.resolveConflict(keepLocal ? 'local' : 'remote'); renderAll(); toast(keepLocal ? 'Kept this device' : 'Loaded Drive version'); }
+      else if (r.action === 'pull') toast('Pulled the latest from Drive');
+      else if (r.action === 'push') toast('Uploaded to Drive');
+      else if (r.action === 'create') toast('Created kidledger.json in your Drive');
+    }
+    async function doSync(interactive) { try { await handleSyncResult(await KidLedgerSync.syncNow(interactive)); } catch (e) { toast('Sync: ' + e.message, true); } }
+    let autoPushTimer;
+    function scheduleAutoPush() { if (!KidLedgerSync.isConnected() || !KidLedgerSync.meta.autosync || !KidLedgerSync.isConfigured()) return; clearTimeout(autoPushTimer); autoPushTimer = setTimeout(() => doSync(false), 1500); }
+
+    // ===================================================================
+    // Render all
+    // ===================================================================
     function renderAll() {
-      refreshSelects();
-      renderDashboard();
-      renderExpenses();
-      renderPayments();
-      renderRecurring();
-      renderReports();
-      renderSettings();
-      renderChildren();
+      refreshSelects(); renderDashboard(); renderExpenses(); renderLedger(); renderRecurring(); renderReports(); renderSettings(); renderChildren(); renderCategories();
       if ($('#statementOutput').dataset.loaded) loadStatement();
     }
 
-    // ---------------------------------------------------------------------
-    // Event wiring
-    // ---------------------------------------------------------------------
-    $('#quickExpenseForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const f = e.target;
-      const v = {
-        date: f.date.value.trim(), amount: Number(f.amount.value), description: f.description.value.trim(),
-        category: f.category.value, child_id: f.child_id.value ? Number(f.child_id.value) : null,
-        paid_by: f.paid_by.value, split_type: 'even', status: 'approved',
-      };
-      const errors = validateExpense(v);
-      if (errors.length) return toast('Please enter ' + errors.join(', '), true);
-      if (!addExpense(v)) return;
-      f.reset();
-      f.date.value = todayISO();
-      renderAll();
-      toast('Expense added');
-    });
+    // ===================================================================
+    // Wiring
+    // ===================================================================
+    $('#quickExpenseForm').addEventListener('submit', (e) => { e.preventDefault(); const f = e.target; const v = { date: f.date.value.trim(), amount: Number(f.amount.value), description: f.description.value.trim(), category: f.category.value, child_id: readAssign(f.child_id.value), paid_by: f.paid_by.value, split_type: 'even', status: 'approved' }; const err = validateExpense(v); if (err.length) return toast('Please enter ' + err.join(', '), true); if (!addExpense(v)) return; f.reset(); f.date.value = todayISO(); refreshSelects(); renderAll(); toast('Expense added'); });
 
     $('#newExpenseBtn').addEventListener('click', () => openExpenseModal(null));
     $('#closeExpenseModal').addEventListener('click', closeExpenseModal);
     $('#cancelExpenseModal').addEventListener('click', closeExpenseModal);
     $('#expenseModal').addEventListener('click', (e) => { if (e.target.id === 'expenseModal') closeExpenseModal(); });
     $('#splitType').addEventListener('change', updateSplitUI);
-    ['input', 'change'].forEach((ev) => $('#expenseForm').addEventListener(ev, (e) => {
-      if (['amount', 'split_percent', 'split_amount', 'split_full', 'split_type'].includes(e.target.name)) updateSplitUI();
-    }));
-    $('#receiptInput').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      fileToReceipt(file, (r, err) => {
-        if (err) { toast(err, true); e.target.value = ''; return; }
-        modalReceipt = r;
-        setReceiptStatus();
-        toast('Receipt attached');
-      });
-    });
-    $('#expenseForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const f = e.target;
-      const v = readModalExpense(f);
-      const errors = validateExpense(v);
-      if (v.split_type === 'percent' && (v.split_value < 0 || v.split_value > 100)) errors.push('a percentage between 0 and 100');
-      if (v.split_type === 'amount' && v.split_value > v.amount) errors.push("a share no larger than the expense");
-      if (errors.length) return toast('Please enter ' + errors.join(', '), true);
-      const ok = f.id.value ? updateExpense(f.id.value, v) : addExpense(v);
-      if (!ok) return;
-      closeExpenseModal();
-      renderAll();
-      toast('Saved');
-    });
+    ['input', 'change'].forEach((ev) => $('#expenseForm').addEventListener(ev, (e) => { if (['amount', 'split_percent', 'split_amount', 'split_full', 'split_type'].includes(e.target.name)) updateSplitUI(); }));
+    $('#receiptInput').addEventListener('change', (e) => { const file = e.target.files[0]; if (!file) return; fileToReceipt(file, (rc, err) => { if (err) { toast(err, true); e.target.value = ''; return; } modalReceipt = rc; setReceiptStatus(); toast('Receipt attached'); }); });
+    $('#expenseForm').addEventListener('submit', (e) => { e.preventDefault(); const f = e.target; const v = readModalExpense(f); const err = validateExpense(v); if (v.split_type === 'percent' && (v.split_value < 0 || v.split_value > 100)) err.push('a percentage 0–100'); if (v.split_type === 'amount' && v.split_value > v.amount) err.push('a share no larger than the amount'); if (err.length) return toast('Please enter ' + err.join(', '), true); const ok = f.id.value ? updateExpense(f.id.value, v) : addExpense(v); if (!ok) return; closeExpenseModal(); renderAll(); toast('Saved'); });
 
     $('#expenseTable').addEventListener('click', (e) => {
-      const edit = e.target.closest('[data-edit]');
-      const del = e.target.closest('[data-del-expense]');
-      const disp = e.target.closest('[data-dispute]');
-      const rec = e.target.closest('[data-receipt]');
+      const edit = e.target.closest('[data-edit]'), del = e.target.closest('[data-del-expense]'), disp = e.target.closest('[data-dispute]'), rec = e.target.closest('[data-receipt]');
       if (edit) { const x = state.expenses.find((z) => String(z.id) === edit.dataset.edit); if (x) openExpenseModal(x); }
       else if (del) { if (confirm('Delete this expense?')) deleteExpense(del.dataset.delExpense); }
-      else if (disp) { toggleDispute(disp.dataset.dispute); }
+      else if (disp) toggleDispute(disp.dataset.dispute);
       else if (rec) { const x = state.expenses.find((z) => String(z.id) === rec.dataset.receipt); if (x && x.receipt) openReceipt(x.receipt); }
     });
-    ['fSearch', 'fMonth', 'fCategory', 'fChild', 'fPaidBy', 'fStatus'].forEach((id) => {
-      $('#' + id).addEventListener('input', renderExpenses);
-      $('#' + id).addEventListener('change', renderExpenses);
-    });
-    $('#fClear').addEventListener('click', () => {
-      ['fSearch', 'fMonth', 'fCategory', 'fChild', 'fPaidBy', 'fStatus'].forEach((id) => { $('#' + id).value = ''; });
-      renderExpenses();
-    });
+    ['fSearch', 'fMonth', 'fCategory', 'fChild', 'fPaidBy', 'fStatus'].forEach((id) => { $('#' + id).addEventListener('input', renderExpenses); $('#' + id).addEventListener('change', renderExpenses); });
+    $('#fClear').addEventListener('click', () => { ['fSearch', 'fMonth', 'fCategory', 'fChild', 'fPaidBy', 'fStatus'].forEach((id) => { $('#' + id).value = ''; }); renderExpenses(); });
     $('#exportCsvBtn').addEventListener('click', exportCsv);
-
     $('#closeReceiptModal').addEventListener('click', () => { $('#receiptModal').hidden = true; $('#receiptBody').innerHTML = ''; });
     $('#receiptModal').addEventListener('click', (e) => { if (e.target.id === 'receiptModal') { $('#receiptModal').hidden = true; $('#receiptBody').innerHTML = ''; } });
 
     $('#paymentForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const f = e.target;
-      const v = {
-        date: f.date.value.trim(), amount: Number(f.amount.value),
-        from_parent: f.from_parent.value, to_parent: f.to_parent.value,
-        method: f.method.value.trim(), notes: f.notes.value.trim(),
-      };
-      const errors = [];
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(v.date)) errors.push('a valid date');
-      if (!Number.isFinite(v.amount) || v.amount <= 0) errors.push('a positive amount');
-      if (v.from_parent === v.to_parent) errors.push('two different parents');
-      if (errors.length) return toast('Please enter ' + errors.join(', '), true);
+      e.preventDefault(); const f = e.target;
+      const v = { date: f.date.value.trim(), amount: Number(f.amount.value), from_parent: f.from_parent.value, to_parent: f.to_parent.value, child_id: readAssign(f.child_id.value), method: f.method.value.trim(), notes: f.notes.value.trim() };
+      const err = []; if (!/^\d{4}-\d{2}-\d{2}$/.test(v.date)) err.push('a valid date'); if (!Number.isFinite(v.amount) || v.amount <= 0) err.push('a positive amount'); if (v.from_parent === v.to_parent) err.push('two different parents');
+      if (err.length) return toast('Please enter ' + err.join(', '), true);
       if (isLocked(v.date)) return toast(monthLabel(v.date.slice(0, 7)) + ' is finalized — unlock it first', true);
-      state.payments.push({ id: nextId(), date: v.date, from_parent: v.from_parent, to_parent: v.to_parent, amount: v.amount, method: v.method || null, notes: v.notes || null });
-      save();
-      f.reset();
-      f.date.value = todayISO();
-      renderAll();
-      toast('Payment recorded');
+      state.payments.push(normalizePayment({ id: nextId(), date: v.date, from_parent: v.from_parent, to_parent: v.to_parent, amount: v.amount, child_id: v.child_id, method: v.method || null, notes: v.notes || null }));
+      save(); f.reset(); f.date.value = todayISO(); refreshSelects(); renderAll(); toast('Payment recorded');
     });
-    $('#paymentList').addEventListener('click', (e) => {
-      const del = e.target.closest('[data-del-payment]');
-      if (!del) return;
-      const p = state.payments.find((x) => String(x.id) === del.dataset.delPayment);
-      if (p && isLocked(p.date)) return toast('That month is finalized — unlock it first', true);
-      if (!confirm('Delete this payment?')) return;
-      state.payments = state.payments.filter((x) => String(x.id) !== String(del.dataset.delPayment));
-      save();
-      renderAll();
-      toast('Deleted');
+    $('#adjustmentForm').addEventListener('submit', (e) => {
+      e.preventDefault(); const f = e.target;
+      const v = { date: f.date.value.trim(), amount: Number(f.amount.value), label: f.label.value.trim(), favor: f.favor.value, child_id: readAssign(f.child_id.value), notes: f.notes.value.trim() };
+      const err = []; if (!/^\d{4}-\d{2}-\d{2}$/.test(v.date)) err.push('a valid date'); if (!Number.isFinite(v.amount) || v.amount <= 0) err.push('a positive amount'); if (!v.label) err.push('a description');
+      if (err.length) return toast('Please enter ' + err.join(', '), true);
+      if (isLocked(v.date)) return toast(monthLabel(v.date.slice(0, 7)) + ' is finalized — unlock it first', true);
+      state.adjustments.push({ id: nextId(), date: v.date, amount: v.amount, label: v.label, favor: v.favor, child_id: v.child_id, notes: v.notes || null });
+      save(); f.reset(); f.date.value = todayISO(); refreshSelects(); renderAll(); toast('Adjustment added');
     });
-
-    $('#settingsForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const f = e.target;
-      const a = f.parent_a_name.value.trim();
-      const b = f.parent_b_name.value.trim();
-      if (!a || !b) return toast('Both parent names are required', true);
-      state.parents = { A: a, B: b };
-      save();
-      renderAll();
-      toast('Names saved');
-    });
-    $('#childForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const name = e.target.name.value.trim();
-      if (!name) return;
-      state.children.push({ id: nextId(), name });
-      save();
-      e.target.reset();
-      renderAll();
-      toast('Child added');
-    });
-    $('#childList').addEventListener('click', (e) => {
-      const del = e.target.closest('[data-del-child]');
-      if (!del) return;
-      state.children = state.children.filter((x) => String(x.id) !== String(del.dataset.delChild));
-      save();
-      renderAll();
-      toast('Removed');
+    $('#ledgerList').addEventListener('click', (e) => {
+      const dp = e.target.closest('[data-del-payment]'), da = e.target.closest('[data-del-adjustment]');
+      if (dp) { const p = state.payments.find((x) => String(x.id) === dp.dataset.delPayment); if (p && isLocked(p.date)) return toast('That month is finalized', true); if (!confirm('Delete this payment?')) return; state.payments = state.payments.filter((x) => String(x.id) !== String(dp.dataset.delPayment)); save(); renderAll(); toast('Deleted'); }
+      else if (da) { const a = state.adjustments.find((x) => String(x.id) === da.dataset.delAdjustment); if (a && isLocked(a.date)) return toast('That month is finalized', true); if (!confirm('Delete this adjustment?')) return; state.adjustments = state.adjustments.filter((x) => String(x.id) !== String(da.dataset.delAdjustment)); save(); renderAll(); toast('Deleted'); }
     });
 
-    $('#exportBtn').addEventListener('click', exportBackup);
-    $('#importBtn').addEventListener('click', () => $('#importFile').click());
-    $('#importFile').addEventListener('change', (e) => { if (e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ''; });
-    $('#clearBtn').addEventListener('click', () => {
-      if (!confirm('Delete ALL data in this browser? Export a backup first if you want to keep it. This cannot be undone.')) return;
-      state = blankState();
-      save();
-      renderAll();
-      toast('All data cleared');
+    $('#settingsForm').addEventListener('submit', (e) => { e.preventDefault(); const f = e.target; const a = f.parent_a_name.value.trim(), b = f.parent_b_name.value.trim(); if (!a || !b) return toast('Both names are required', true); state.parents = { A: a, B: b }; save(); renderAll(); toast('Names saved'); });
+    $('#childForm').addEventListener('submit', (e) => { e.preventDefault(); const name = e.target.name.value.trim(); if (!name) return; state.children.push({ id: nextId(), name }); save(); e.target.reset(); renderAll(); toast('Child added'); });
+    $('#childList').addEventListener('click', (e) => { const del = e.target.closest('[data-del-child]'); if (!del) return; state.children = state.children.filter((x) => String(x.id) !== String(del.dataset.delChild)); save(); renderAll(); toast('Removed'); });
+    $('#categoryForm').addEventListener('submit', (e) => { e.preventDefault(); const name = e.target.name.value.trim(); if (!name) return; if (state.categories.some((c) => c.toLowerCase() === name.toLowerCase())) return toast('That category already exists', true); state.categories.push(name); save(); e.target.reset(); renderAll(); toast('Category added'); });
+    $('#categoryList').addEventListener('click', (e) => { const del = e.target.closest('[data-del-cat]'); if (!del) return; if (state.categories.length <= 1) return toast('Keep at least one category', true); state.categories = state.categories.filter((c) => c !== del.dataset.delCat); save(); renderAll(); toast('Category removed'); });
+
+    $('#splitTypeRec').addEventListener('change', updateRecSplitUI);
+    $('#recurringForm').addEventListener('submit', (e) => {
+      e.preventDefault(); const f = e.target; const t = f.split_type.value; let sv = null;
+      if (t === 'percent') sv = Number(f.split_percent.value) || 0; else if (t === 'amount') sv = Number(f.split_amount.value) || 0; else if (t === 'full') sv = f.split_full.value;
+      const v = { description: f.description.value.trim(), amount: Number(f.amount.value), day: Math.min(Math.max(Number(f.day.value) || 1, 1), 31), category: f.category.value, child_id: readAssign(f.child_id.value), paid_by: f.paid_by.value, split_type: t, split_value: sv, start_month: f.start_month.value, end_month: f.end_month.value || null, tax_deductible: f.tax_deductible.checked };
+      const err = []; if (!v.description) err.push('a description'); if (!Number.isFinite(v.amount) || v.amount <= 0) err.push('a positive amount'); if (!/^\d{4}-\d{2}$/.test(v.start_month)) err.push('a start month'); if (v.end_month && v.end_month < v.start_month) err.push('an end month after the start'); if (t === 'percent' && (sv < 0 || sv > 100)) err.push('a percentage 0–100');
+      if (err.length) return toast('Please enter ' + err.join(', '), true);
+      addRecurring(v); const created = generateRecurring(); f.reset(); f.start_month.value = thisMonth(); f.day.value = 1; refreshSelects(); updateRecSplitUI(); renderAll(); toast('Recurring added' + (created ? ' · ' + created + ' created' : ''));
     });
+    $('#recurringList').addEventListener('click', (e) => {
+      const tog = e.target.closest('[data-rec-toggle]'), del = e.target.closest('[data-rec-del]');
+      if (tog) { const t = state.recurring.find((x) => String(x.id) === tog.dataset.recToggle); if (t) { t.active = !t.active; save(); if (t.active) generateRecurring(); renderAll(); toast(t.active ? 'Resumed' : 'Paused'); } }
+      else if (del) { if (!confirm('Delete this recurring expense? Entries already created are kept.')) return; state.recurring = state.recurring.filter((x) => String(x.id) !== String(del.dataset.recDel)); save(); renderAll(); toast('Deleted'); }
+    });
+
+    $('#reportRange').addEventListener('change', renderReports);
+    $('#exportChildBtn').addEventListener('click', () => exportReportCsv('child'));
+    $('#exportCatBtn').addEventListener('click', () => exportReportCsv('category'));
+    $('#exportTaxBtn').addEventListener('click', exportTaxCsv);
 
     $('#loadStatementBtn').addEventListener('click', loadStatement);
     $('#statementMonth').addEventListener('change', loadStatement);
     $('#lockStatementBtn').addEventListener('click', toggleLock);
     $('#printStatementBtn').addEventListener('click', () => window.print());
 
-    // Recurring
-    $('#splitTypeRec').addEventListener('change', updateRecSplitUI);
-    $('#recurringForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const f = e.target;
-      const type = f.split_type.value;
-      let split_value = null;
-      if (type === 'percent') split_value = Number(f.split_percent.value) || 0;
-      else if (type === 'amount') split_value = Number(f.split_amount.value) || 0;
-      else if (type === 'full') split_value = f.split_full.value;
-      const v = {
-        description: f.description.value.trim(), amount: Number(f.amount.value),
-        day: Math.min(Math.max(Number(f.day.value) || 1, 1), 31),
-        category: f.category.value, child_id: f.child_id.value ? Number(f.child_id.value) : null,
-        paid_by: f.paid_by.value, split_type: type, split_value,
-        start_month: f.start_month.value, end_month: f.end_month.value || null,
-        tax_deductible: f.tax_deductible.checked,
-      };
-      const errors = [];
-      if (!v.description) errors.push('a description');
-      if (!Number.isFinite(v.amount) || v.amount <= 0) errors.push('a positive amount');
-      if (!/^\d{4}-\d{2}$/.test(v.start_month)) errors.push('a start month');
-      if (v.end_month && v.end_month < v.start_month) errors.push('an end month after the start');
-      if (type === 'percent' && (split_value < 0 || split_value > 100)) errors.push('a percentage between 0 and 100');
-      if (errors.length) return toast('Please enter ' + errors.join(', '), true);
-      addRecurring(v);
-      const created = generateRecurring();
-      f.reset();
-      f.start_month.value = thisMonth();
-      f.day.value = 1;
-      updateRecSplitUI();
-      renderAll();
-      toast('Recurring expense added' + (created ? ' · ' + created + ' entr' + (created === 1 ? 'y' : 'ies') + ' created' : ''));
-    });
-    $('#recurringList').addEventListener('click', (e) => {
-      const tog = e.target.closest('[data-rec-toggle]');
-      const del = e.target.closest('[data-rec-del]');
-      if (tog) {
-        const t = state.recurring.find((x) => String(x.id) === tog.dataset.recToggle);
-        if (t) { t.active = !t.active; save(); if (t.active) generateRecurring(); renderAll(); toast(t.active ? 'Resumed' : 'Paused'); }
-      } else if (del) {
-        if (!confirm('Delete this recurring expense? Entries already created will be kept.')) return;
-        state.recurring = state.recurring.filter((x) => String(x.id) !== String(del.dataset.recDel));
-        save();
-        renderAll();
-        toast('Recurring expense deleted');
-      }
-    });
-
-    // Reports
-    $('#exportTaxBtn').addEventListener('click', exportTaxCsv);
-
-    // ---------------------------------------------------------------------
-    // Cloud sync (Google Drive)
-    // ---------------------------------------------------------------------
-    // Replace local state with a document pulled from Drive, without bumping the
-    // local timestamp (so it doesn't look like a new local edit).
-    function adoptState(obj) {
-      applyingRemote = true;
-      try {
-        state = Object.assign(blankState(), obj, {
-          parents: Object.assign({ A: 'Parent A', B: 'Parent B' }, obj.parents || {}),
-          locked_months: Array.isArray(obj.locked_months) ? obj.locked_months : [],
-          recurring: Array.isArray(obj.recurring) ? obj.recurring : [],
-        });
-        state.expenses = (state.expenses || []).map(normalizeExpense);
-        saveRaw();
-        renderAll();
-      } finally {
-        applyingRemote = false;
-      }
-    }
-
-    function updateSyncUI(st, msg, meta) {
-      const box = $('#syncStatus');
-      const txt = $('#syncStatusText');
-      if (!box) return;
-      box.className = 'sync-status';
-      const when = meta && meta.lastSyncAt ? new Date(meta.lastSyncAt).toLocaleString() : '';
-      let label = 'Not connected';
-      if (st === 'syncing') { box.classList.add('busy'); label = 'Syncing…'; }
-      else if (st === 'synced') { box.classList.add('ok'); label = 'Synced' + (when ? ' · ' + when : ''); }
-      else if (st === 'conflict') { box.classList.add('warn'); label = 'Sync conflict — choose a version'; }
-      else if (st === 'error') { box.classList.add('bad'); label = 'Sync error' + (msg ? ': ' + msg : ''); }
-      else if (st === 'idle') { label = 'Connected' + (when ? ' · last synced ' + when : ' — tap Sync now'); }
-      txt.textContent = label;
-    }
-
-    async function handleSyncResult(r) {
-      if (!r) return;
-      if (r.action === 'conflict') {
-        const keepLocal = confirm('Sync conflict:\n\nThis device and Google Drive were BOTH changed since the last sync.\n\nOK = keep THIS device’s version (upload it to Drive)\nCancel = use Google Drive’s version (download it here)\n\nEither way, a backup of the replaced side is kept in this browser.');
-        await KidLedgerSync.resolveConflict(keepLocal ? 'local' : 'remote');
-        renderAll();
-        toast(keepLocal ? 'Kept this device — uploaded to Drive' : 'Loaded Drive’s version');
-      } else if (r.action === 'pull') { toast('Pulled the latest from Drive'); }
-      else if (r.action === 'push') { toast('Uploaded to Drive'); }
-      else if (r.action === 'create') { toast('Created kidledger.json in your Drive'); }
-    }
-
-    async function doSync(interactive) {
-      try { await handleSyncResult(await KidLedgerSync.syncNow(interactive)); }
-      catch (e) { toast('Sync: ' + e.message, true); }
-    }
-
-    let autoPushTimer;
-    function scheduleAutoPush() {
-      if (!KidLedgerSync.isConnected() || !KidLedgerSync.meta.autosync || !KidLedgerSync.isConfigured()) return;
-      clearTimeout(autoPushTimer);
-      autoPushTimer = setTimeout(() => doSync(false), 1500);
-    }
+    $('#exportBtn').addEventListener('click', exportBackup);
+    $('#importBtn').addEventListener('click', () => $('#importFile').click());
+    $('#importFile').addEventListener('change', (e) => { if (e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ''; });
+    $('#clearBtn').addEventListener('click', () => { if (!confirm('Delete ALL data in this browser? Export a backup first. This cannot be undone.')) return; state = blankState(); save(); renderAll(); toast('All data cleared'); });
 
     KidLedgerSync.init({ getState: () => state, applyRemote: adoptState, onStatus: updateSyncUI });
     $('#clientIdInput').value = KidLedgerSync.meta.clientId || '';
     $('#autoSyncToggle').checked = KidLedgerSync.meta.autosync !== false;
-
-    $('#connectDriveBtn').addEventListener('click', async () => {
-      const id = $('#clientIdInput').value.trim();
-      if (id) KidLedgerSync.setClientId(id);
-      if (!KidLedgerSync.isConfigured()) { toast('Enter your Google Client ID first', true); return; }
-      try { await handleSyncResult(await KidLedgerSync.connect()); }
-      catch (e) { toast('Connect: ' + e.message, true); }
-    });
-    $('#syncNowBtn').addEventListener('click', () => {
-      const id = $('#clientIdInput').value.trim();
-      if (id) KidLedgerSync.setClientId(id);
-      doSync(true);
-    });
-    $('#disconnectDriveBtn').addEventListener('click', () => { KidLedgerSync.disconnect(); toast('Disconnected from Drive'); });
+    $('#connectDriveBtn').addEventListener('click', async () => { const id = $('#clientIdInput').value.trim(); if (id) KidLedgerSync.setClientId(id); if (!KidLedgerSync.isConfigured()) { toast('Enter your Google Client ID first', true); return; } try { await handleSyncResult(await KidLedgerSync.connect()); } catch (e) { toast('Connect: ' + e.message, true); } });
+    $('#syncNowBtn').addEventListener('click', () => { const id = $('#clientIdInput').value.trim(); if (id) KidLedgerSync.setClientId(id); doSync(true); });
+    $('#disconnectDriveBtn').addEventListener('click', () => { KidLedgerSync.disconnect(); toast('Disconnected'); });
     $('#autoSyncToggle').addEventListener('change', (e) => KidLedgerSync.setAutoSync(e.target.checked));
     $('#clientIdInput').addEventListener('change', (e) => KidLedgerSync.setClientId(e.target.value));
 
-    // Register the service worker for offline use (only over http/https).
-    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
-      window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
-    }
+    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
 
-    // ---------------------------------------------------------------------
+    // ===================================================================
     // Boot
-    // ---------------------------------------------------------------------
+    // ===================================================================
+    injectNavIcons();
     $$('input[type="date"]').forEach((i) => { if (!i.value) i.value = todayISO(); });
     $('#recurringForm').start_month.value = thisMonth();
     updateRecSplitUI();
     const createdOnBoot = generateRecurring();
     renderAll();
     if (createdOnBoot) toast(createdOnBoot + ' recurring expense(s) added for you');
-
-    // Auto-sync on open if already connected.
-    if (KidLedgerSync.isConnected() && KidLedgerSync.meta.autosync && KidLedgerSync.isConfigured()) {
-      setTimeout(() => doSync(false), 900);
-    }
+    if (KidLedgerSync.isConnected() && KidLedgerSync.meta.autosync && KidLedgerSync.isConfigured()) setTimeout(() => doSync(false), 900);
   })();
   </script>
 </body>

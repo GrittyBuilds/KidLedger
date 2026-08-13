@@ -162,3 +162,69 @@ test('empty month produces a clean zero statement', () => {
   assert.equal(stmt.closing.balance, 0);
   assert.equal(stmt.line_items.length, 0);
 });
+
+// --- Adjustments / rollover ------------------------------------------------
+
+test('adjustment in favor of A increases what B owes A', () => {
+  const adj = [{ date: '2026-01-01', favor: 'A', amount: 100 }];
+  assert.equal(finance.computeBalance([], [], adj), 100);
+});
+
+test('adjustment in favor of B moves the balance the other way', () => {
+  const adj = [{ date: '2026-01-01', favor: 'B', amount: 40 }];
+  assert.equal(finance.computeBalance([], [], adj), -40);
+});
+
+test('rollover opening balance flows into the statement', () => {
+  const adj = [{ id: 1, date: '2025-12-31', favor: 'A', amount: 200, label: 'Opening balance' }];
+  const stmt = finance.buildStatement('2026-01', [], [], names, adj);
+  assert.equal(stmt.opening.balance, 200);          // prior rollover carried forward
+  assert.equal(stmt.closing.balance, 200);
+});
+
+test('adjustment within the month appears and affects closing', () => {
+  const adj = [{ id: 1, date: '2026-03-10', favor: 'B', amount: 50, label: 'Credit' }];
+  const stmt = finance.buildStatement('2026-03', [], [], names, adj);
+  assert.equal(stmt.adjustments.length, 1);
+  assert.equal(stmt.net_from_adjustments, -50);
+  assert.equal(stmt.closing.balance, -50);
+});
+
+// --- Reporting -------------------------------------------------------------
+
+test('summarizeByChild groups by child and splits responsibility', () => {
+  const expenses = [
+    { child_name: 'Sam', amount: 100, paid_by: 'A', category: 'Medical' },
+    { child_name: 'Sam', amount: 50, paid_by: 'B', category: 'Food' },
+    { child_name: null, amount: 80, paid_by: 'A', category: 'Other' }, // Shared
+  ];
+  const rows = finance.summarizeByChild(expenses, names);
+  const sam = rows.find((r) => r.name === 'Sam');
+  const shared = rows.find((r) => r.name === 'Shared');
+  assert.equal(sam.total, 150);
+  assert.equal(sam.respA, 75);
+  assert.equal(sam.respB, 75);
+  assert.equal(shared.total, 80);
+  assert.equal(shared.respA, 40);
+});
+
+test('summarizeByCategory groups and sorts by total', () => {
+  const expenses = [
+    { category: 'Medical', amount: 300, paid_by: 'A' },
+    { category: 'Food', amount: 100, paid_by: 'B' },
+    { category: 'Medical', amount: 100, paid_by: 'A' },
+  ];
+  const rows = finance.summarizeByCategory(expenses);
+  assert.equal(rows[0].name, 'Medical');
+  assert.equal(rows[0].total, 400);
+  assert.equal(rows[1].name, 'Food');
+});
+
+test('disputed expenses are excluded from reports', () => {
+  const expenses = [
+    { child_name: 'Sam', amount: 100, paid_by: 'A', category: 'Medical' },
+    { child_name: 'Sam', amount: 999, paid_by: 'A', category: 'Medical', status: 'disputed' },
+  ];
+  assert.equal(finance.summarizeByChild(expenses, names)[0].total, 100);
+  assert.equal(finance.summarizeByCategory(expenses)[0].total, 100);
+});

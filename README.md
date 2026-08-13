@@ -72,13 +72,25 @@ browser). The same Client ID and Google account are used on every device.
 
 - **Track shared expenses** — date, description, category, amount, which parent
   paid, and (optionally) which child it was for.
+- **Child or shared assignment** — every expense is assigned to a specific child
+  or marked **Shared** (never left blank).
 - **Flexible splits** — split each expense evenly (50/50), by a custom
   **percentage**, by a fixed **dollar amount**, or **100% to one parent**. Quick-add
   uses 50/50; the full editor exposes every option with a live preview.
+- **Editable categories** — add or remove expense categories in Settings.
+- **Payments & rollover** — record settlement payments (allocatable to a child or
+  shared), plus manual **adjustments / rollover** entries for opening balances,
+  agreed credits, or corrections that move the running balance.
 - **Receipt attachments** — attach a photo or PDF to any expense as proof. Images
   are automatically downscaled to keep storage small; view receipts in-app.
 - **Dispute / approve status** — flag a contested charge as *disputed* and it's
   excluded from the balance and statements until you approve it.
+- **Per-child & per-category reporting** — Reports tab breaks spending down by
+  child and by category (with each parent's responsibility share) over a chosen
+  range, exportable to CSV.
+- **Professional billing statement** — a clean, invoice-style monthly statement
+  with summary tiles, itemized expenses, payments/adjustments, a by-child and
+  by-category breakdown, reconciliation, and a clear amount due.
 - **Running balance** — always know who owes whom, factoring in all expenses and
   past settlement payments.
 - **Settlement payments** — record when one parent pays the other to square up.
