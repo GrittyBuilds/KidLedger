@@ -3,59 +3,73 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>KidLedger — Shared Expense Tracker</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧾</text></svg>" />
+  <title>Parity — Shared Expense Tracker</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='116' fill='%230E5E63'/><circle cx='256' cy='256' r='150' fill='%23fff'/><rect x='176' y='214' width='160' height='34' rx='17' fill='%230E5E63'/><rect x='176' y='264' width='160' height='34' rx='17' fill='%23159C90'/></svg>" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <meta name="theme-color" content="#4f46e5" />
+  <meta name="theme-color" content="#0E5E63" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="KidLedger" />
+  <meta name="apple-mobile-web-app-title" content="Parity" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
-  <script>try{var _t=localStorage.getItem('kidledger.theme');if(_t==='dark'||_t==='light')document.documentElement.setAttribute('data-theme',_t);}catch(e){}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script>try{var _t=localStorage.getItem('parity.theme')||localStorage.getItem('kidledger.theme');if(_t==='dark'||_t==='light')document.documentElement.setAttribute('data-theme',_t);}catch(e){}</script>
   <style>
+    /* Parity brand palette. Teal leads; green = settled, amber = owed, clay = overdue. */
     :root {
-      --bg: #f5f6f9; --surface: #ffffff; --surface-2: #f7f8fb; --surface-3: #eef0f5;
-      --ink: #14161c; --ink-soft: #4a5262; --muted: #949cad; --border: #e7e9f0; --border-2: #dfe2ec;
-      --brand: #4f46e5; --brand-600: #4338ca; --brand-050: #eef1fe; --brand-100: #e0e5fd;
-      --green: #0f9d6b; --green-050: #e7f6ef; --red: #dc4b4b; --red-050: #fdecec;
-      --amber: #b7791f; --amber-050: #fbf3e2; --blue: #1f6fd6; --blue-050: #e7f0fc;
-      --shadow-sm: 0 1px 2px rgba(20,25,45,.06);
-      --shadow: 0 1px 3px rgba(20,25,45,.06), 0 6px 20px rgba(20,25,45,.05);
-      --shadow-lg: 0 10px 40px rgba(20,25,45,.14);
+      --bg: #F2F6F5; --surface: #ffffff; --surface-2: #F2F6F5; --surface-3: #E6EEEC;
+      --ink: #16233A; --ink-soft: #3C4A57; --muted: #5B6B73; --border: #DBE5E3; --border-2: #CBD9D6;
+      --brand: #0E5E63; --brand-600: #0B4A52; --brand-050: #E4F5F1; --brand-100: #CFEAE5;
+      --signal: #159C90;
+      --green: #2FA37C; --green-050: #E4F5EE; --red: #C4553D; --red-050: #FBEDE9;
+      --amber: #B87516; --amber-050: #FBEFDD; --slate: #16233A; --slate-050: #E7EBF0;
+      --shadow-sm: 0 1px 2px rgba(14,94,99,.07);
+      --shadow: 0 1px 3px rgba(14,94,99,.07), 0 8px 24px rgba(14,94,99,.07);
+      --shadow-lg: 0 20px 50px -24px rgba(14,94,99,.4);
       --r-sm: 9px; --r: 13px; --r-lg: 18px;
-      --serif: Georgia, 'Times New Roman', serif;
-      --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      --display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+      --grad: linear-gradient(135deg, #159C90, #0E5E63);
+      --grad-hero: linear-gradient(150deg, #0E5E63 0%, #0B4A52 55%, #0a3d47 100%);
       --glass: rgba(255,255,255,.9); color-scheme: light;
     }
-    /* Dark palette — applied when the OS is dark (unless the user forced light),
-       and whenever the user explicitly picks dark. */
+    /* Dark palette — deep teal-tinted; applied on OS dark (unless forced light) or explicit dark. */
     @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-      --bg:#0f1116; --surface:#181b22; --surface-2:#1f232c; --surface-3:#2a2f3b;
-      --ink:#e9ebf2; --ink-soft:#aeb6c6; --muted:#7b8494; --border:#282d38; --border-2:#333a48;
-      --brand:#8b83f6; --brand-600:#a29bf8; --brand-050:#20223a; --brand-100:#2a2d49;
-      --green:#39c08d; --green-050:#12271f; --red:#f0736f; --red-050:#2c1b1d;
-      --amber:#d8a94e; --amber-050:#2a2417; --blue:#5aa2ef; --blue-050:#15243a;
-      --glass: rgba(16,17,22,.82); color-scheme: dark;
+      --bg:#0B1618; --surface:#122428; --surface-2:#0F2023; --surface-3:#1B3438;
+      --ink:#EAF3F1; --ink-soft:#BCCDCA; --muted:#8AA19D; --border:#1F3C40; --border-2:#2A4A4E;
+      --brand:#2BBAA9; --brand-600:#4FD0C0; --brand-050:#123A37; --brand-100:#164A44;
+      --signal:#2BBAA9;
+      --green:#3CBF95; --green-050:#0F2E26; --red:#E07A60; --red-050:#3A1F18;
+      --amber:#E6A94E; --amber-050:#3A2E17; --slate:#9FB4C4; --slate-050:#1A2A38;
+      --grad-hero: linear-gradient(150deg, #0E5E63 0%, #0B4A52 55%, #072e35 100%);
+      --glass: rgba(11,22,24,.82); color-scheme: dark;
       --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
-      --shadow: 0 1px 3px rgba(0,0,0,.45), 0 6px 20px rgba(0,0,0,.4);
-      --shadow-lg: 0 10px 40px rgba(0,0,0,.55);
+      --shadow: 0 1px 3px rgba(0,0,0,.45), 0 8px 24px rgba(0,0,0,.4);
+      --shadow-lg: 0 20px 50px -24px rgba(0,0,0,.6);
     } }
     :root[data-theme="dark"] {
-      --bg:#0f1116; --surface:#181b22; --surface-2:#1f232c; --surface-3:#2a2f3b;
-      --ink:#e9ebf2; --ink-soft:#aeb6c6; --muted:#7b8494; --border:#282d38; --border-2:#333a48;
-      --brand:#8b83f6; --brand-600:#a29bf8; --brand-050:#20223a; --brand-100:#2a2d49;
-      --green:#39c08d; --green-050:#12271f; --red:#f0736f; --red-050:#2c1b1d;
-      --amber:#d8a94e; --amber-050:#2a2417; --blue:#5aa2ef; --blue-050:#15243a;
-      --glass: rgba(16,17,22,.82); color-scheme: dark;
+      --bg:#0B1618; --surface:#122428; --surface-2:#0F2023; --surface-3:#1B3438;
+      --ink:#EAF3F1; --ink-soft:#BCCDCA; --muted:#8AA19D; --border:#1F3C40; --border-2:#2A4A4E;
+      --brand:#2BBAA9; --brand-600:#4FD0C0; --brand-050:#123A37; --brand-100:#164A44;
+      --signal:#2BBAA9;
+      --green:#3CBF95; --green-050:#0F2E26; --red:#E07A60; --red-050:#3A1F18;
+      --amber:#E6A94E; --amber-050:#3A2E17; --slate:#9FB4C4; --slate-050:#1A2A38;
+      --grad-hero: linear-gradient(150deg, #0E5E63 0%, #0B4A52 55%, #072e35 100%);
+      --glass: rgba(11,22,24,.82); color-scheme: dark;
       --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
-      --shadow: 0 1px 3px rgba(0,0,0,.45), 0 6px 20px rgba(0,0,0,.4);
-      --shadow-lg: 0 10px 40px rgba(0,0,0,.55);
+      --shadow: 0 1px 3px rgba(0,0,0,.45), 0 8px 24px rgba(0,0,0,.4);
+      --shadow-lg: 0 20px 50px -24px rgba(0,0,0,.6);
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; }
     body { margin: 0; font-family: var(--sans); background: var(--bg); color: var(--ink); line-height: 1.5; -webkit-font-smoothing: antialiased; }
-    h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
+    h1, h2, h3 { margin: 0; font-family: var(--display); font-weight: 700; letter-spacing: -0.02em; }
+    /* Figures use IBM Plex Mono so money lines up. */
+    td.num, th.num, .li .amt, .tile .v, .hero .amt, .glance-row .gv, .cbar-val, .hbar-val,
+    .stmt-tile .v, .stmt-due .dv, .stmt-recon .l span:last-child, .summary-bar b, .mono { font-family: var(--mono); }
     a { color: inherit; }
     [hidden] { display: none !important; }
 
@@ -66,7 +80,7 @@
       display: flex; flex-direction: column; padding: 20px 14px; position: sticky; top: 0; height: 100vh;
     }
     .brand { display: flex; align-items: center; gap: 11px; padding: 4px 8px 20px; }
-    .brand .logo { width: 38px; height: 38px; border-radius: 11px; background: linear-gradient(135deg,#6d5ef0,#4f46e5); display: grid; place-items: center; font-size: 20px; box-shadow: var(--shadow-sm); }
+    .brand .logo { width: 38px; height: 38px; display: block; flex-shrink: 0; }
     .brand h1 { font-size: 18px; }
     .brand .tagline { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
     .nav { display: flex; flex-direction: column; gap: 2px; }
@@ -111,8 +125,8 @@
     .muted { color: var(--muted); font-size: 13px; }
 
     /* Balance hero */
-    .hero { border-radius: var(--r-lg); padding: 26px 26px; color: #fff; margin-bottom: 18px; box-shadow: var(--shadow); background: linear-gradient(135deg,#5b53ef,#4f46e5 55%,#4338ca); position: relative; overflow: hidden; }
-    .hero.settled { background: linear-gradient(135deg,#12b07a,#0f9d6b); }
+    .hero { border-radius: var(--r-lg); padding: 26px 26px; color: #fff; margin-bottom: 18px; box-shadow: var(--shadow); background: var(--grad-hero); position: relative; overflow: hidden; }
+    .hero.settled { background: linear-gradient(150deg,#2FA37C 0%,#1d8a67 100%); }
     .hero::after { content: ''; position: absolute; right: -40px; top: -40px; width: 180px; height: 180px; background: rgba(255,255,255,.08); border-radius: 50%; }
     .hero .lbl { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; opacity: .82; }
     .hero .amt { font-size: 34px; font-weight: 700; margin-top: 8px; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
@@ -157,11 +171,11 @@
     .li .s { font-size: 12px; color: var(--muted); margin-top: 1px; }
     .li .amt { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .avatar { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-weight: 700; font-size: 13px; flex: 0 0 auto; }
-    .avatar.a { background: var(--blue-050); color: var(--blue); } .avatar.b { background: var(--amber-050); color: var(--amber); } .avatar.pay { background: var(--green-050); color: var(--green); } .avatar.adj { background: var(--brand-050); color: var(--brand); }
+    .avatar.a { background: var(--brand-050); color: var(--signal); } .avatar.b { background: var(--slate-050); color: var(--slate); } .avatar.pay { background: var(--green-050); color: var(--green); } .avatar.adj { background: var(--brand-050); color: var(--brand); }
 
     .pill { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--surface-3); color: var(--ink-soft); white-space: nowrap; }
-    .pill.a { background: var(--blue-050); color: var(--blue); } .pill.b { background: var(--amber-050); color: var(--amber); }
-    .pill.pay { background: var(--green-050); color: var(--green); } .pill.warn { background: var(--red-050); color: var(--red); }
+    .pill.a { background: var(--brand-050); color: var(--signal); } .pill.b { background: var(--slate-050); color: var(--slate); }
+    .pill.pay { background: var(--green-050); color: var(--green); } .pill.warn { background: var(--red-050); color: var(--red); } .pill.owed { background: var(--amber-050); color: var(--amber); }
     .pill.tiny { font-size: 10px; padding: 1px 7px; }
 
     .glance { display: flex; flex-direction: column; }
@@ -197,7 +211,7 @@
     .chart-bars { display: flex; align-items: flex-end; gap: 12px; padding: 8px 0 0; }
     .cbar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 7px; min-width: 0; }
     .cbar-wrap { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 5px; height: 160px; }
-    .cbar { width: 68%; max-width: 46px; background: linear-gradient(180deg,#6d5ef0,#4f46e5); border-radius: 6px 6px 0 0; min-height: 3px; transition: filter .12s; }
+    .cbar { width: 68%; max-width: 46px; background: linear-gradient(180deg,#159C90,#0E5E63); border-radius: 6px 6px 0 0; min-height: 3px; transition: filter .12s; }
     .cbar:hover { filter: brightness(1.1); }
     .cbar-val { font-size: 11px; font-weight: 700; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
     .cbar-x { font-size: 11px; color: var(--muted); }
@@ -205,7 +219,7 @@
     .hbar-row { display: grid; grid-template-columns: 130px 1fr auto; align-items: center; gap: 12px; font-size: 13px; }
     .hbar-label { color: var(--ink-soft); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .hbar-track { background: var(--surface-3); border-radius: 6px; height: 15px; overflow: hidden; }
-    .hbar-fill { height: 100%; background: linear-gradient(90deg,#4f46e5,#6d5ef0); border-radius: 6px; min-width: 3px; }
+    .hbar-fill { height: 100%; background: linear-gradient(90deg,#0E5E63,#159C90); border-radius: 6px; min-width: 3px; }
     .hbar-val { font-weight: 700; font-variant-numeric: tabular-nums; }
     @media (max-width: 520px) { .hbar-row { grid-template-columns: 96px 1fr auto; } }
 
@@ -252,11 +266,11 @@
     .stmt { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow); padding: 40px 42px; }
     .stmt-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; padding-bottom: 22px; border-bottom: 2px solid var(--ink); }
     .stmt-mark { display: flex; align-items: center; gap: 11px; }
-    .stmt-mark .m { width: 40px; height: 40px; border-radius: 11px; background: linear-gradient(135deg,#6d5ef0,#4f46e5); display: grid; place-items: center; font-size: 21px; }
-    .stmt-mark .n { font-family: var(--serif); font-size: 21px; font-weight: 700; letter-spacing: -.01em; }
+    .stmt-mark .m { width: 40px; height: 40px; display: block; }
+    .stmt-mark .n { font-family: var(--display); font-size: 21px; font-weight: 700; letter-spacing: -.01em; }
     .stmt-mark .p { font-size: 12px; color: var(--muted); margin-top: 1px; }
     .stmt-title { text-align: right; }
-    .stmt-title .h { font-family: var(--serif); font-size: 26px; font-weight: 700; letter-spacing: -.01em; }
+    .stmt-title .h { font-family: var(--display); font-size: 26px; font-weight: 700; letter-spacing: -.01em; }
     .stmt-title .period { font-size: 13.5px; color: var(--ink-soft); margin-top: 3px; font-weight: 600; }
     .stmt-title .date { font-size: 12px; color: var(--muted); margin-top: 2px; }
     .stmt-badge { display: inline-block; margin-top: 8px; padding: 3px 11px; border-radius: 999px; font-size: 11.5px; font-weight: 700; background: var(--green-050); color: var(--green); }
@@ -268,7 +282,7 @@
     .stmt-tile { border: 1px solid var(--border); border-radius: var(--r); padding: 13px 14px; background: var(--surface-2); }
     .stmt-tile .k { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
     .stmt-tile .v { font-size: 18px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
-    .stmt-sec { font-family: var(--serif); font-size: 15px; font-weight: 700; margin: 26px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+    .stmt-sec { font-family: var(--display); font-size: 15px; font-weight: 700; margin: 26px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
     .stmt-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
     @media (max-width: 640px) { .stmt-2col { grid-template-columns: 1fr; gap: 8px; } }
     .stmt-recon { margin-top: 8px; }
@@ -278,7 +292,7 @@
     .stmt-due.settled { background: var(--green-050); }
     .stmt-due .dl { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; color: var(--brand); }
     .stmt-due.settled .dl { color: var(--green); }
-    .stmt-due .dv { font-family: var(--serif); font-size: 26px; font-weight: 700; color: var(--brand); font-variant-numeric: tabular-nums; }
+    .stmt-due .dv { font-family: var(--display); font-size: 26px; font-weight: 700; color: var(--brand); font-variant-numeric: tabular-nums; }
     .stmt-due.settled .dv { color: var(--green); font-size: 20px; }
     .stmt-due .dw { font-size: 13px; color: var(--ink-soft); font-weight: 600; }
     .stmt-note { margin-top: 16px; padding: 12px 15px; border-radius: var(--r); background: var(--amber-050); color: var(--amber); font-size: 13px; font-weight: 600; }
@@ -289,7 +303,7 @@
       .sidebar { display: none; }
       .mobile-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; position: sticky; top: 0; z-index: 30; background: var(--glass); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); padding: 12px 16px calc(12px); }
       .mobile-top .mbrand { display: flex; align-items: center; gap: 9px; font-weight: 700; }
-      .mobile-top .mbrand .logo { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg,#6d5ef0,#4f46e5); display: grid; place-items: center; font-size: 16px; }
+      .mobile-top .mbrand .logo { width: 30px; height: 30px; display: block; }
       .content { padding: 18px 16px 96px; }
       .bottom-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 40; background: var(--glass); backdrop-filter: blur(12px); border-top: 1px solid var(--border); padding: 8px 6px calc(8px + env(safe-area-inset-bottom)); justify-content: space-around; }
       .bnav { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; border: none; background: transparent; color: var(--muted); font: inherit; font-size: 10.5px; font-weight: 600; cursor: pointer; padding: 3px 2px; }
@@ -308,7 +322,7 @@
       :root, :root[data-theme="dark"], :root[data-theme="light"] {
         --bg:#fff; --surface:#fff; --surface-2:#fff; --surface-3:#eee;
         --ink:#14161c; --ink-soft:#4a5262; --muted:#7a8090; --border:#e0e2e8; --border-2:#d4d7df;
-        --brand:#4f46e5; --brand-050:#eef1fe; --green:#0f9d6b; --green-050:#e7f6ef; --amber:#b7791f; --amber-050:#fbf3e2;
+        --brand:#0E5E63; --brand-050:#E4F5F1; --green:#2FA37C; --green-050:#E4F5EE; --amber:#B87516; --amber-050:#FBEFDD;
         color-scheme: light;
       }
       .sidebar, .mobile-top, .bottom-nav, .fab, .no-print, .toast { display: none !important; }
@@ -326,8 +340,8 @@
     <!-- Sidebar (desktop) -->
     <aside class="sidebar">
       <div class="brand">
-        <div class="logo">🧾</div>
-        <div><h1>KidLedger</h1><div class="tagline">Shared expenses, done fairly</div></div>
+        <div class="logo"><svg viewBox="0 0 512 512" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><rect width="512" height="512" rx="116" fill="#0E5E63"/><circle cx="256" cy="256" r="150" fill="#fff"/><rect x="176" y="214" width="160" height="34" rx="17" fill="#0E5E63"/><rect x="176" y="264" width="160" height="34" rx="17" fill="#159C90"/></svg></div>
+        <div><h1>Parity</h1><div class="tagline">Fair, on the record.</div></div>
       </div>
       <nav class="nav" id="sideNav">
         <button class="nav-item active" data-view="dashboard"><span>Dashboard</span></button>
@@ -341,13 +355,13 @@
       <div class="sidebar-foot">
         <div class="sf-sync"><span class="dot" id="sideDot"></span><span id="sideSync">Local only</span></div>
         <button class="theme-btn" id="themeToggleSide" aria-label="Toggle theme">◐ System</button>
-        <div style="margin-top:8px;">KidLedger · v3</div>
+        <div style="margin-top:8px;">Parity · v1.0</div>
       </div>
     </aside>
 
     <div class="main">
       <div class="mobile-top">
-        <div class="mbrand"><div class="logo">🧾</div><span id="mobileTitle">Dashboard</span></div>
+        <div class="mbrand"><div class="logo"><svg viewBox="0 0 512 512" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><rect width="512" height="512" rx="116" fill="#0E5E63"/><circle cx="256" cy="256" r="150" fill="#fff"/><rect x="176" y="214" width="160" height="34" rx="17" fill="#0E5E63"/><rect x="176" y="264" width="160" height="34" rx="17" fill="#159C90"/></svg></div><span id="mobileTitle">Dashboard</span></div>
         <div style="display:flex;gap:2px;">
           <button class="icon-btn" id="themeToggleMobile" aria-label="Toggle theme">◐</button>
           <button class="icon-btn" id="mobileSettings" aria-label="Settings" data-view="settings">⚙️</button>
@@ -739,7 +753,8 @@
     // ===================================================================
     // Store
     // ===================================================================
-    const STORAGE_KEY = 'kidledger.v1';
+    const STORAGE_KEY = 'parity.v1';
+    const LEGACY_STORAGE_KEY = 'kidledger.v1';
     const DEFAULT_CATEGORIES = ['Medical', 'Childcare', 'Education', 'Activities', 'Clothing', 'Food', 'Travel', 'Other'];
     const VIEW_TITLES = { dashboard: 'Dashboard', expenses: 'Expenses', payments: 'Payments', recurring: 'Recurring', reports: 'Reports', statement: 'Statements', settings: 'Settings' };
 
@@ -766,7 +781,7 @@
     }
     function load() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
         if (!raw) return blankState();
         const parsed = JSON.parse(raw);
         const s = Object.assign(blankState(), parsed, {
@@ -869,8 +884,8 @@
     // ===================================================================
     // Theme
     // ===================================================================
-    const THEME_KEY = 'kidledger.theme';
-    function getTheme() { try { return localStorage.getItem(THEME_KEY) || 'system'; } catch (e) { return 'system'; } }
+    const THEME_KEY = 'parity.theme';
+    function getTheme() { try { return localStorage.getItem(THEME_KEY) || localStorage.getItem('kidledger.theme') || 'system'; } catch (e) { return 'system'; } }
     function applyTheme(t) { const r = document.documentElement; if (t === 'dark' || t === 'light') r.setAttribute('data-theme', t); else r.removeAttribute('data-theme'); }
     function updateThemeUI() {
       const t = getTheme();
@@ -888,7 +903,7 @@
     function showView(name) {
       $$('[data-view]').forEach((b) => { if (b.classList.contains('nav-item') || b.classList.contains('bnav')) b.classList.toggle('active', b.dataset.view === name); });
       $$('.view').forEach((v) => v.classList.toggle('active', v.id === 'view-' + name));
-      $('#mobileTitle').textContent = VIEW_TITLES[name] || 'KidLedger';
+      $('#mobileTitle').textContent = VIEW_TITLES[name] || 'Parity';
       $('#moreSheet').hidden = true;
       $('#content').scrollTop = 0; window.scrollTo(0, 0);
       if (name === 'statement' && !$('#statementOutput').dataset.loaded) { $('#statementMonth').value = $('#statementMonth').value || prevMonthStr(thisMonth()); loadStatement(); }
@@ -1037,7 +1052,7 @@
       const header = ['Date', 'Description', 'Category', 'For', 'Paid by', 'Amount', state.parents.A + ' share', state.parents.B + ' share', 'Split', 'Status', 'Tax-relevant', 'Notes'];
       const lines = [header.map(csvEscape).join(',')];
       for (const e of [...rows].reverse()) { const sh = Finance.shares(e); lines.push([e.date, e.description, e.category, childName(e.child_id), parentName(e.paid_by), e.amount.toFixed(2), sh.A.toFixed(2), sh.B.toFixed(2), Finance.splitLabel(e, state.parents), e.status || 'approved', e.tax_deductible ? 'Yes' : 'No', e.notes || ''].map(csvEscape).join(',')); }
-      downloadBlob(lines.join('\r\n'), 'text/csv;charset=utf-8', 'kidledger-expenses-' + todayISO() + '.csv'); toast('CSV exported');
+      downloadBlob(lines.join('\r\n'), 'text/csv;charset=utf-8', 'parity-expenses-' + todayISO() + '.csv'); toast('CSV exported');
     }
 
     // ===================================================================
@@ -1064,13 +1079,13 @@
     function renderChildren() { $('#childList').innerHTML = state.children.length ? state.children.map((c) => '<span class="chip">' + esc(c.name) + '<button data-del-child="' + c.id + '" aria-label="Remove">✕</button></span>').join('') : '<span class="muted">No children yet.</span>'; }
     function renderCategories() { $('#categoryList').innerHTML = state.categories.map((c) => '<span class="chip">' + esc(c) + '<button data-del-cat="' + esc(c) + '" aria-label="Remove">✕</button></span>').join(''); }
 
-    function exportBackup() { downloadBlob(JSON.stringify(state, null, 2), 'application/json', 'kidledger-backup-' + todayISO() + '.json'); toast('Backup downloaded'); }
+    function exportBackup() { downloadBlob(JSON.stringify(state, null, 2), 'application/json', 'parity-backup-' + todayISO() + '.json'); toast('Backup downloaded'); }
     function importBackup(file) {
       const r = new FileReader();
       r.onload = () => {
         try {
           const data = JSON.parse(r.result);
-          if (!data || !Array.isArray(data.expenses) || !Array.isArray(data.payments)) throw new Error('Not a valid KidLedger backup');
+          if (!data || !Array.isArray(data.expenses) || !Array.isArray(data.payments)) throw new Error('Not a valid Parity backup');
           if (!confirm('Import this backup? It replaces all current data in this browser.')) return;
           state = migrate(Object.assign(blankState(), data, { parents: Object.assign({ A: 'Parent A', B: 'Parent B' }, data.parents || {}), locked_months: Array.isArray(data.locked_months) ? data.locked_months : [], recurring: Array.isArray(data.recurring) ? data.recurring : [] }));
           const maxId = Math.max(0, ...state.expenses.map((e) => e.id || 0), ...state.payments.map((p) => p.id || 0), ...state.adjustments.map((a) => a.id || 0), ...state.children.map((c) => c.id || 0), ...state.recurring.map((t) => t.id || 0));
@@ -1147,12 +1162,12 @@
       if (kind === 'child') { header = ['Child', 'Expenses', 'Total', state.parents.A + ' share', state.parents.B + ' share']; rows = Finance.summarizeByChild(set, state.parents).map((r) => [r.name, r.count, r.total.toFixed(2), r.respA.toFixed(2), r.respB.toFixed(2)]); }
       else { header = ['Category', 'Expenses', 'Total', state.parents.A + ' share', state.parents.B + ' share']; rows = Finance.summarizeByCategory(set).map((r) => [r.name, r.count, r.total.toFixed(2), r.respA.toFixed(2), r.respB.toFixed(2)]); }
       if (!rows.length) { toast('Nothing to export', true); return; }
-      downloadBlob([header, ...rows].map((r) => r.map(csvEscape).join(',')).join('\r\n'), 'text/csv;charset=utf-8', 'kidledger-' + kind + '-report-' + todayISO() + '.csv'); toast('CSV exported');
+      downloadBlob([header, ...rows].map((r) => r.map(csvEscape).join(',')).join('\r\n'), 'text/csv;charset=utf-8', 'parity-' + kind + '-report-' + todayISO() + '.csv'); toast('CSV exported');
     }
     function exportTaxCsv() {
       const rows = taxByYear(); if (!rows.length) { toast('Nothing to export', true); return; }
       const header = ['Year', 'Items', 'Total', state.parents.A + ' share', state.parents.B + ' share'];
-      downloadBlob([header.map(csvEscape).join(','), ...rows.map(([y, d]) => [y, d.count, d.total.toFixed(2), d.a.toFixed(2), d.b.toFixed(2)].map(csvEscape).join(','))].join('\r\n'), 'text/csv;charset=utf-8', 'kidledger-tax-summary-' + todayISO() + '.csv'); toast('Tax summary exported');
+      downloadBlob([header.map(csvEscape).join(','), ...rows.map(([y, d]) => [y, d.count, d.total.toFixed(2), d.a.toFixed(2), d.b.toFixed(2)].map(csvEscape).join(','))].join('\r\n'), 'text/csv;charset=utf-8', 'parity-tax-summary-' + todayISO() + '.csv'); toast('Tax summary exported');
     }
 
     // ===================================================================
@@ -1182,7 +1197,7 @@
     // ===================================================================
     // Statement (invoice)
     // ===================================================================
-    function statusChip(st) { const cls = { open: '', overdue: ' warn', paid: ' pay', settled: ' pay' }[st] || ''; return '<span class="pill' + cls + '">' + STATUS_WORD[st] + '</span>'; }
+    function statusChip(st) { const cls = { open: ' owed', overdue: ' warn', paid: ' pay', settled: ' pay' }[st] || ''; return '<span class="pill' + cls + '">' + STATUS_WORD[st] + '</span>'; }
     function renderStatementLedger() {
       const led = currentLedger();
       const el = $('#statementLedger');
@@ -1229,7 +1244,7 @@
       const aging = s.aging.map((a) => '<tr' + (a.period === s.month ? ' style="font-weight:700"' : '') + '><td>' + esc(a.label) + '</td><td>' + fmtDate(a.due) + '</td><td class="num">' + money(Math.abs(a.charge)) + '</td><td class="num">' + money(a.paid_amount + a.credit_applied) + '</td><td class="num">' + money(Math.abs(a.remaining)) + '</td><td>' + STATUS_WORD[a.status] + '</td></tr>').join('');
 
       return '<div class="stmt">' +
-        '<div class="stmt-top"><div class="stmt-mark"><div class="m">🧾</div><div><div class="n">KidLedger</div><div class="p">Shared expense statement</div></div></div>' +
+        '<div class="stmt-top"><div class="stmt-mark"><div class="m"><svg viewBox="0 0 512 512" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><rect width="512" height="512" rx="116" fill="#0E5E63"/><circle cx="256" cy="256" r="150" fill="#fff"/><rect x="176" y="214" width="160" height="34" rx="17" fill="#0E5E63"/><rect x="176" y="264" width="160" height="34" rx="17" fill="#159C90"/></svg></div><div><div class="n">Parity</div><div class="p">Shared expense statement</div></div></div>' +
         '<div class="stmt-title"><div class="h">Statement</div><div class="period">' + monthLabel(s.month) + '</div><div class="date">Issued ' + fmtDate(s.issue) + ' · Due ' + fmtDate(s.due) + '</div>' + (locked ? '<div class="stmt-badge">🔒 Finalized</div> ' : '') + statusBadge + '</div></div>' +
         '<div class="stmt-parties"><div><div class="k">Between</div><div class="v">' + esc(s.names.A) + '</div></div><div><div class="k">And</div><div class="v">' + esc(s.names.B) + '</div></div><div><div class="k">Payment due by</div><div class="v">' + fmtDate(s.due) + '</div></div></div>' +
         '<div class="stmt-tiles">' +
@@ -1256,7 +1271,7 @@
           (s.credit_carry < 0 ? '<div class="l"><span>Standing credit balance</span><span>' + money(Math.abs(s.credit_carry)) + '</span></div>' : '') +
           '<div class="l total"><span>Running account balance</span><span>' + (run.settled ? 'Settled' : esc(run.text)) + '</span></div></div>' +
         '<div class="stmt-sec">All statements (aging)</div><div class="table-wrap"><table><thead><tr><th>Statement</th><th>Due</th><th class="num">Charges</th><th class="num">Paid / credited</th><th class="num">Outstanding</th><th>Status</th></tr></thead><tbody>' + (aging || '<tr><td colspan="6" class="empty">None</td></tr>') + '</tbody></table></div>' +
-        '<div class="stmt-foot">Statement for ' + monthLabel(s.month) + ', issued ' + fmtDate(s.issue) + ', payment due by ' + fmtDate(s.due) + '. The account balance reflects all months to date; credits are applied to the oldest outstanding statement first. Generated by KidLedger on ' + fmtDate(todayISO()) + '.</div>' +
+        '<div class="stmt-foot">Statement for ' + monthLabel(s.month) + ', issued ' + fmtDate(s.issue) + ', payment due by ' + fmtDate(s.due) + '. The account balance reflects all months to date; credits are applied to the oldest outstanding statement first. Generated by Parity on ' + fmtDate(todayISO()) + '.</div>' +
       '</div>';
     }
 
@@ -1317,7 +1332,7 @@
       if (r.action === 'conflict') { const keepLocal = confirm('Sync conflict:\n\nThis device and Google Drive both changed since the last sync.\n\nOK = keep THIS device (upload)\nCancel = use Google Drive (download)'); await KidLedgerSync.resolveConflict(keepLocal ? 'local' : 'remote'); renderAll(); toast(keepLocal ? 'Kept this device' : 'Loaded Drive version'); }
       else if (r.action === 'pull') toast('Pulled the latest from Drive');
       else if (r.action === 'push') toast('Uploaded to Drive');
-      else if (r.action === 'create') toast('Created kidledger.json in your Drive');
+      else if (r.action === 'create') toast('Created parity.json in your Drive');
     }
     async function doSync(interactive) { try { await handleSyncResult(await KidLedgerSync.syncNow(interactive)); } catch (e) { toast('Sync: ' + e.message, true); } }
     let autoPushTimer;

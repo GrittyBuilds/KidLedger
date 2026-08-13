@@ -16,10 +16,12 @@
 (function (global) {
   'use strict';
 
-  var FILE_NAME = 'kidledger.json';
+  var FILE_NAME = 'parity.json';
+  var LEGACY_FILE_NAME = 'kidledger.json'; // pre-rebrand; still found and adopted
   var SCOPE = 'https://www.googleapis.com/auth/drive.file';
-  var META_KEY = 'kidledger.sync';
-  var PRESYNC_KEY = 'kidledger.presync';
+  var META_KEY = 'parity.sync';
+  var LEGACY_META_KEY = 'kidledger.sync';
+  var PRESYNC_KEY = 'parity.presync';
 
   /**
    * Decide what a sync should do, given four timestamps (ms; 0 if unknown).
@@ -59,7 +61,7 @@
     // ---- persistence of sync metadata (not the ledger itself) ----
     _loadMeta: function () {
       try {
-        var raw = localStorage.getItem(META_KEY);
+        var raw = localStorage.getItem(META_KEY) || localStorage.getItem(LEGACY_META_KEY);
         if (raw) this.meta = Object.assign(this.meta, JSON.parse(raw));
       } catch (e) { /* ignore */ }
     },
@@ -119,10 +121,13 @@
 
     _find: function (token) {
       var url = 'https://www.googleapis.com/drive/v3/files?q=' +
-        encodeURIComponent("name='" + FILE_NAME + "' and trashed=false") +
+        encodeURIComponent("(name='" + FILE_NAME + "' or name='" + LEGACY_FILE_NAME + "') and trashed=false") +
         '&spaces=drive&fields=' + encodeURIComponent('files(id,modifiedTime,name)') + '&pageSize=5';
       return this._api(token, url).then(function (r) { return r.json(); }).then(function (j) {
-        return (j.files && j.files.length) ? j.files[0] : null;
+        if (!j.files || !j.files.length) return null;
+        // Prefer the current filename; otherwise adopt the legacy file.
+        for (var i = 0; i < j.files.length; i++) if (j.files[i].name === FILE_NAME) return j.files[i];
+        return j.files[0];
       });
     },
     _download: function (token, id) {

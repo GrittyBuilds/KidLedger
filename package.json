@@ -1,7 +1,7 @@
 {
-  "name": "kidledger",
-  "version": "2.0.0",
-  "description": "Single-user, browser-only expense tracker for co-parents who split children's expenses 50/50. Stores data in the browser's localStorage; no server required.",
+  "name": "parity",
+  "version": "1.0.0",
+  "description": "Parity — the neutral ledger for two homes. A browser-only, installable expense tracker for co-parents: log children's expenses, split them fairly, and settle up on the record. Works offline and syncs through your own Google Drive.",
   "scripts": {
     "test": "node --test"
   },

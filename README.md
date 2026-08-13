@@ -1,4 +1,6 @@
-# 🧾 KidLedger
+# Parity
+
+**Fair, on the record.** — the neutral ledger for two homes.
 
 A **browser-only, installable** expense tracker for co-parents who split their
 children's expenses. Log every expense, record settlement payments, watch the
@@ -42,7 +44,7 @@ files at the repo root.
 
 ## Syncing across devices with Google Drive
 
-KidLedger stores one private file, `kidledger.json`, in your Google Drive using
+Parity stores one private file, `parity.json`, in your Google Drive using
 the `drive.file` scope — meaning **the app can only ever see the file it
 created**, never the rest of your Drive. Auth is entirely client-side; there is
 no server and no stored secret.
@@ -57,11 +59,11 @@ no server and no stored secret.
    **Web application**.
 5. Under **Authorized JavaScript origins**, add your hosted address
    (e.g. `https://<your-user>.github.io`).
-6. Copy the **Client ID**, open KidLedger → **Settings → Sync**, paste it, and
+6. Copy the **Client ID**, open Parity → **Settings → Sync**, paste it, and
    click **Connect Google Drive**.
 
 Then on any other device, install the app, paste the same Client ID, and connect —
-it finds your `kidledger.json` and syncs.
+it finds your `parity.json` and syncs.
 
 **How sync behaves:** it pulls the latest when you open the app and pushes shortly
 after each change. If the same data changed on two devices since the last sync, it
@@ -120,7 +122,7 @@ browser). The same Client ID and Google account are used on every device.
 - **Finalize (lock) a month** — once a month is settled, finalize it to make its
   expenses and payments read-only — an immutable record until you unlock it.
 - **Recurring expenses** — set up monthly costs (daycare, tuition) once, and
-  KidLedger adds each month's entry automatically when you open the app. Pause,
+  Parity adds each month's entry automatically when you open the app. Pause,
   resume, or delete templates; deleting keeps entries already created.
 - **Spending charts** — a Reports tab with a monthly-spending trend and a
   by-category breakdown.
@@ -154,8 +156,8 @@ Parent A**.
 ## Where your data lives
 
 Each device keeps its own copy in the browser's `localStorage` under the key
-`kidledger.v1`. If you connect Google Drive, that copy is also mirrored to a
-private `kidledger.json` in your Drive and synced between your devices.
+`parity.v1`. If you connect Google Drive, that copy is also mirrored to a
+private `parity.json` in your Drive and synced between your devices.
 
 - **It's private** — data goes only to your own Google Drive (or nowhere, if you
   don't connect sync).

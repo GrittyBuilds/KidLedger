@@ -6,7 +6,7 @@
  * cache-first version could pin an old build — hence the switch.)
  *
  * Bump CACHE on any change so old caches are cleared on activate. */
-const CACHE = 'kidledger-v4';
+const CACHE = 'parity-v5';
 const SHELL = [
   './',
   './index.html',
