@@ -1348,7 +1348,26 @@
     $('#autoSyncToggle').addEventListener('change', (e) => KidLedgerSync.setAutoSync(e.target.checked));
     $('#clientIdInput').addEventListener('change', (e) => KidLedgerSync.setClientId(e.target.value));
 
-    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').then((reg) => {
+          // When a new version installs (and a page is already controlled),
+          // reload once so the update takes effect immediately.
+          reg.addEventListener('updatefound', () => {
+            const nw = reg.installing;
+            if (!nw) return;
+            nw.addEventListener('statechange', () => {
+              if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                toast('Updating to the latest version…');
+                setTimeout(() => location.reload(), 600);
+              }
+            });
+          });
+        }).catch(() => {});
+        // Check for a new version each time the app is opened/refocused.
+        navigator.serviceWorker.ready.then((reg) => { reg.update().catch(() => {}); });
+      });
+    }
 
     { const ts = $('#themeToggleSide'); if (ts) ts.addEventListener('click', cycleTheme); }
     { const tm = $('#themeToggleMobile'); if (tm) tm.addEventListener('click', cycleTheme); }
