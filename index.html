@@ -1189,15 +1189,14 @@
       if (!led.statements.length) { el.innerHTML = '<div class="empty">No statements yet — add expenses to generate monthly statements.</div>'; return; }
       el.innerHTML = '<table><thead><tr><th>Statement</th><th>Issued</th><th>Due</th><th class="num">Charges</th><th class="num">Paid</th><th class="num">Outstanding</th><th>Status</th></tr></thead><tbody>' +
         led.statements.map((s) => {
-          const note = s.carried_forward < 0 ? '<div class="s" style="color:var(--green)">' + money(Math.abs(s.carried_forward)) + ' credit → next</div>'
-            : (s.carry_in < 0 ? '<div class="s" style="color:var(--muted)">' + money(Math.abs(s.carry_in)) + ' credit applied</div>' : '');
-          return '<tr data-period="' + s.period + '" style="cursor:pointer;"><td>' + esc(s.label) + note + '</td><td>' + fmtDate(s.issue) + '</td><td>' + fmtDate(s.due) + '</td><td class="num">' + money(Math.abs(s.charge)) + '</td><td class="num">' + money(s.paid_amount) + '</td><td class="num">' + money(Math.abs(s.remaining)) + '</td><td>' + statusChip(s.status) + '</td></tr>';
+          const note = s.credit_provided > 0 ? '<div class="s" style="color:var(--green)">provided ' + money(s.credit_provided) + ' credit</div>'
+            : (s.credit_applied > 0 ? '<div class="s" style="color:var(--muted)">' + money(s.credit_applied) + ' credit applied</div>' : '');
+          return '<tr data-period="' + s.period + '" style="cursor:pointer;"><td>' + esc(s.label) + note + '</td><td>' + fmtDate(s.issue) + '</td><td>' + fmtDate(s.due) + '</td><td class="num">' + money(Math.abs(s.charge)) + '</td><td class="num">' + money(s.paid_amount + s.credit_applied) + '</td><td class="num">' + money(Math.abs(s.remaining)) + '</td><td>' + statusChip(s.status) + '</td></tr>';
         }).join('') +
         '</tbody></table>' +
         '<div class="summary-bar" style="padding-top:14px;"><span>Open <b>' + led.open_count + '</b></span><span>Overdue <b style="color:var(--red)">' + led.overdue_count + '</b></span>' + (led.settled_count ? '<span>Settled <b style="color:var(--green)">' + led.settled_count + '</b></span>' : '') +
-        (led.unapplied !== 0 ? '<span>Unapplied <b>' + money(Math.abs(led.unapplied)) + '</b></span>' : '') +
         (led.credit_carry < 0 ? '<span>Credit balance <b style="color:var(--green)">' + money(Math.abs(led.credit_carry)) + '</b></span>' : '') +
-        '<span>Total outstanding <b>' + (led.total_summary.settled ? '$0.00' : money(led.total_summary.amount)) + '</b>' + (led.total_summary.settled ? '' : ' — ' + esc(led.total_summary.text)) + '</span></div>';
+        '<span>Account balance <b>' + (led.total_summary.settled ? '$0.00' : money(led.total_summary.amount)) + '</b>' + (led.total_summary.settled ? '' : ' — ' + esc(led.total_summary.text)) + '</span></div>';
     }
     function loadStatement() {
       const month = $('#statementMonth').value || prevMonthStr(thisMonth());
@@ -1215,10 +1214,10 @@
     }
     function signed(n) { return n === 0 ? money(0) : (n > 0 ? '+' : '−') + money(Math.abs(n)); }
     function renderStatement(s) {
-      const due = s.due_summary, locked = state.locked_months.includes(s.month);
+      const due = s.due_summary, run = s.running_summary, acct = s.account, locked = state.locked_months.includes(s.month);
       const settledLike = s.status === 'paid' || s.status === 'settled';
       const statusBadge = { open: '', overdue: '<span class="stmt-badge" style="background:var(--red-050);color:var(--red)">Overdue</span>', paid: '<span class="stmt-badge">Paid</span>', settled: '<span class="stmt-badge">Settled</span>' }[s.status] || '';
-      const carriedNote = s.carried_forward < 0 ? '<div class="stmt-note" style="background:var(--green-050);color:var(--green)">✓ Overpaid — a credit of ' + money(Math.abs(s.carried_forward)) + ' has been applied to the next statement.</div>' : '';
+      const providedNote = s.credit_provided > 0 ? '<div class="stmt-note" style="background:var(--green-050);color:var(--green)">✓ This month nets a ' + money(s.credit_provided) + ' credit, applied to the oldest outstanding statement(s).</div>' : '';
       const items = s.line_items.length ? s.line_items.map((li) => '<tr><td>' + fmtDate(li.date) + '</td><td>' + esc(li.description) + '<div class="s" style="color:var(--muted);font-size:12px;">' + esc(li.child) + ' · ' + esc(li.category) + (li.has_receipt ? ' · 📎' : '') + '</div></td><td>' + esc(li.paid_by_name) + '</td><td>' + esc(li.split_label) + '</td><td class="num">' + money(li.amount) + '</td><td class="num">' + money(li.owed_amount) + '</td></tr>').join('') : '<tr><td colspan="6" class="empty">No expenses in this statement.</td></tr>';
       const pay = (s.payments.length || s.adjustments.length) ? '<div class="stmt-sec">Payments &amp; credits applied</div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Detail</th><th class="num">Amount</th></tr></thead><tbody>' +
         s.payments.map((p) => '<tr><td>' + fmtDate(p.date) + '</td><td>Payment · ' + esc(p.from_name) + ' → ' + esc(p.to_name) + (p.method ? ' (' + esc(p.method) + ')' : '') + '</td><td class="num">' + money(p.amount) + '</td></tr>').join('') +
@@ -1226,6 +1225,8 @@
       const disputed = s.disputed_items.length ? '<div class="stmt-note">⚠ ' + s.disputed_items.length + ' disputed item(s) totaling ' + money(s.totals.disputed_total) + ' are excluded until approved.</div>' : '';
       const byChild = s.by_child.length ? s.by_child.map((r) => '<div class="stmt-recon"><div class="l"><span>' + esc(r.name) + '</span><span>' + money(r.total) + '</span></div></div>').join('') : '<div class="muted">No expenses.</div>';
       const byCat = s.by_category.length ? s.by_category.map((r) => '<div class="stmt-recon"><div class="l"><span>' + esc(r.name) + '</span><span>' + money(r.total) + '</span></div></div>').join('') : '<div class="muted">No expenses.</div>';
+      // Account-wide aging (all statements) — shows exactly how the running balance is composed.
+      const aging = s.aging.map((a) => '<tr' + (a.period === s.month ? ' style="font-weight:700"' : '') + '><td>' + esc(a.label) + '</td><td>' + fmtDate(a.due) + '</td><td class="num">' + money(Math.abs(a.charge)) + '</td><td class="num">' + money(a.paid_amount + a.credit_applied) + '</td><td class="num">' + money(Math.abs(a.remaining)) + '</td><td>' + STATUS_WORD[a.status] + '</td></tr>').join('');
 
       return '<div class="stmt">' +
         '<div class="stmt-top"><div class="stmt-mark"><div class="m">🧾</div><div><div class="n">KidLedger</div><div class="p">Shared expense statement</div></div></div>' +
@@ -1233,22 +1234,29 @@
         '<div class="stmt-parties"><div><div class="k">Between</div><div class="v">' + esc(s.names.A) + '</div></div><div><div class="k">And</div><div class="v">' + esc(s.names.B) + '</div></div><div><div class="k">Payment due by</div><div class="v">' + fmtDate(s.due) + '</div></div></div>' +
         '<div class="stmt-tiles">' +
           '<div class="stmt-tile"><div class="k">Charges</div><div class="v">' + money(Math.abs(s.charge)) + '</div></div>' +
-          '<div class="stmt-tile"><div class="k">Payments applied</div><div class="v">' + money(Math.abs(s.net_from_payments)) + '</div></div>' +
-          '<div class="stmt-tile"><div class="k">Adjustments</div><div class="v">' + money(Math.abs(s.net_from_adjustments)) + '</div></div>' +
+          '<div class="stmt-tile"><div class="k">Payments / credits</div><div class="v">' + money(Math.abs(s.net_from_payments) + Math.abs(s.net_from_adjustments) + s.credit_applied) + '</div></div>' +
           '<div class="stmt-tile"><div class="k">Amount due</div><div class="v">' + (settledLike ? '$0.00' : money(due.amount)) + '</div></div>' +
+          '<div class="stmt-tile" style="background:var(--brand-050);border-color:transparent"><div class="k">Account balance</div><div class="v">' + (run.settled ? '$0.00' : money(run.amount)) + '</div></div>' +
         '</div>' +
         '<div class="stmt-sec">Expenses</div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Description</th><th>Paid by</th><th>Split</th><th class="num">Amount</th><th class="num">Owed to payer</th></tr></thead><tbody>' + items + '</tbody></table></div>' +
         disputed + pay +
         '<div class="stmt-sec">Breakdown</div><div class="stmt-2col"><div><div class="k" style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">By child</div>' + byChild + '</div><div><div class="k" style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">By category</div>' + byCat + '</div></div>' +
-        '<div class="stmt-sec">Reconciliation</div><div class="stmt-recon">' +
+        '<div class="stmt-sec">This statement</div><div class="stmt-recon">' +
           '<div class="l"><span>Charges this statement</span><span>' + signed(s.charge) + '</span></div>' +
           (s.net_from_payments !== 0 ? '<div class="l"><span>Payments applied</span><span>' + signed(s.net_from_payments) + '</span></div>' : '') +
           (s.net_from_adjustments !== 0 ? '<div class="l"><span>Adjustments applied</span><span>' + signed(s.net_from_adjustments) + '</span></div>' : '') +
-          (s.carry_in < 0 ? '<div class="l"><span>Credit applied from prior overpayment</span><span>' + signed(s.carry_in) + '</span></div>' : '') +
-          '<div class="l total"><span>Amount due</span><span>' + (settledLike ? money(0) : (due.debtor === 'B' ? '+' : '−') + money(due.amount)) + '</span></div></div>' +
-        carriedNote +
-        '<div class="stmt-due ' + (settledLike ? 'settled' : '') + '"><div><div class="dl">' + (s.status === 'settled' ? 'Settled' : (s.status === 'paid' ? 'Paid in full' : (s.status === 'overdue' ? 'Amount overdue' : 'Amount due by ' + fmtDate(s.due)))) + '</div><div class="dw">' + (settledLike ? (s.status === 'settled' ? 'Overpaid — credit carried to next statement.' : 'No balance owing on this statement.') : esc(due.text)) + '</div></div><div class="dv">' + (settledLike ? '✓' : money(due.amount)) + '</div></div>' +
-        '<div class="stmt-foot">Statement for ' + monthLabel(s.month) + ', issued ' + fmtDate(s.issue) + ', payment due by ' + fmtDate(s.due) + '. Generated by KidLedger on ' + fmtDate(todayISO()) + '.</div>' +
+          (s.credit_applied > 0 ? '<div class="l"><span>Credit applied from other statements</span><span>' + signed(-s.credit_applied) + '</span></div>' : '') +
+          '<div class="l total"><span>Amount due for ' + monthLabel(s.month) + '</span><span>' + (settledLike ? money(0) : (due.debtor === 'B' ? '+' : '−') + money(due.amount)) + '</span></div></div>' +
+        providedNote +
+        '<div class="stmt-due ' + (settledLike ? 'settled' : '') + '"><div><div class="dl">' + (s.status === 'settled' ? 'Settled' : (s.status === 'paid' ? 'Paid in full' : (s.status === 'overdue' ? 'Amount overdue' : 'Amount due by ' + fmtDate(s.due)))) + '</div><div class="dw">' + (settledLike ? (s.status === 'settled' ? 'Settled — this month\'s credit was applied to outstanding statements.' : 'No balance owing on this statement.') : esc(due.text)) + '</div></div><div class="dv">' + (settledLike ? '✓' : money(due.amount)) + '</div></div>' +
+        '<div class="stmt-sec">Account balance — how it\'s calculated</div><div class="stmt-recon">' +
+          '<div class="l"><span>Total shared expenses owed (' + esc(acct.charges >= 0 ? s.names.B : s.names.A) + ' → ' + esc(acct.charges >= 0 ? s.names.A : s.names.B) + ')</span><span>' + money(Math.abs(acct.charges)) + '</span></div>' +
+          '<div class="l"><span>Less payments received</span><span>' + signed(acct.payments) + '</span></div>' +
+          (acct.adjustments !== 0 ? '<div class="l"><span>Adjustments</span><span>' + signed(acct.adjustments) + '</span></div>' : '') +
+          (s.credit_carry < 0 ? '<div class="l"><span>Standing credit balance</span><span>' + money(Math.abs(s.credit_carry)) + '</span></div>' : '') +
+          '<div class="l total"><span>Running account balance</span><span>' + (run.settled ? 'Settled' : esc(run.text)) + '</span></div></div>' +
+        '<div class="stmt-sec">All statements (aging)</div><div class="table-wrap"><table><thead><tr><th>Statement</th><th>Due</th><th class="num">Charges</th><th class="num">Paid / credited</th><th class="num">Outstanding</th><th>Status</th></tr></thead><tbody>' + (aging || '<tr><td colspan="6" class="empty">None</td></tr>') + '</tbody></table></div>' +
+        '<div class="stmt-foot">Statement for ' + monthLabel(s.month) + ', issued ' + fmtDate(s.issue) + ', payment due by ' + fmtDate(s.due) + '. The account balance reflects all months to date; credits are applied to the oldest outstanding statement first. Generated by KidLedger on ' + fmtDate(todayISO()) + '.</div>' +
       '</div>';
     }
 

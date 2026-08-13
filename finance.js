@@ -140,16 +140,14 @@
     var nm = nextMonth(period);
     return { issue: nm + '-' + ISSUE_DAY, due: nm + '-' + DUE_DAY };
   }
-  /**
-   * Classify a statement from its net balance AFTER any carried-in credit
-   * (`withCarry`, signed B-owes-A positive). Positive is still owed; a negative
-   * balance is an overpayment/credit that carries to the next statement.
-   * Returns { status, remaining, carry }.
-   */
-  function classifyStatement(withCarry, due, today) {
-    if (Math.abs(withCarry) < 0.005) return { status: 'paid', remaining: 0, carry: 0 };
-    if (withCarry > 0) return { status: (today && today > due) ? 'overdue' : 'open', remaining: round2(withCarry), carry: 0 };
-    return { status: 'settled', remaining: 0, carry: round2(withCarry) }; // credit carries forward
+  /** Account-wide running totals (the authoritative overall balance & breakdown). */
+  function accountTotals(expenses, payments, adjustments, names) {
+    var charges = 0, pay = 0, adj = 0, i;
+    for (i = 0; i < expenses.length; i++) charges += expenseDelta(expenses[i]);
+    for (i = 0; i < payments.length; i++) pay += paymentDelta(payments[i]);
+    if (adjustments) for (i = 0; i < adjustments.length; i++) adj += adjustmentDelta(adjustments[i]);
+    var balance = round2(charges + pay + adj);
+    return { charges: round2(charges), payments: round2(pay), adjustments: round2(adj), balance: balance, summary: describeBalance(balance, names) };
   }
   /** Net charge (signed, B-owes-A positive) for a month's approved expenses. */
   function periodCharge(expenses, month) {
@@ -169,64 +167,81 @@
   }
 
   /**
-   * Compute every statement in chronological order, carrying each overpayment
-   * forward as a credit against the next statement (cascading). `extra` forces a
-   * period to be included even if it has no activity yet.
-   * Returns { chain (oldest->newest), final_carry }.
+   * The billing ledger. Each month is a statement (charges + payments/adjustments
+   * applied directly to it). Any resulting CREDIT — an overpaid statement, or a
+   * month that nets in the debtor's favor, or a negative unapplied balance — is
+   * pooled and applied to the OLDEST OUTSTANDING statement first, so a credit
+   * never surfaces as a reverse "the other parent owes you" bill while a balance
+   * is owed. Leftover credit becomes a standing credit balance.
+   *
+   * The overall running balance is the authoritative account balance and is shown
+   * on every statement. `extra` forces a period to appear even with no activity.
    */
-  function statementChain(expenses, payments, adjustments, names, today, extra) {
+  function statementLedger(expenses, payments, adjustments, names, today, extra) {
     adjustments = adjustments || [];
     var periods = {}, i;
     for (i = 0; i < expenses.length; i++) { var e = expenses[i]; if (e.status !== 'disputed' && typeof e.date === 'string') periods[e.date.slice(0, 7)] = true; }
     for (i = 0; i < payments.length; i++) if (payments[i].statement_period) periods[payments[i].statement_period] = true;
     for (i = 0; i < adjustments.length; i++) if (adjustments[i].statement_period) periods[adjustments[i].statement_period] = true;
     if (extra) periods[extra] = true;
+    var ordered = Object.keys(periods).sort(); // oldest first
 
-    var carry = 0;
-    var chain = Object.keys(periods).sort().map(function (p) {
+    // Pass 1: each statement's own (direct) balance.
+    var rows = ordered.map(function (p) {
       var charge = periodCharge(expenses, p);
       var applied = appliedTo(payments, adjustments, p);
-      var subtotal = round2(charge + applied);
-      var carryIn = carry;
-      var withCarry = round2(subtotal + carryIn);
-      var d = statementDates(p);
-      var cls = classifyStatement(withCarry, d.due, today);
-      carry = cls.carry;
-      return {
-        period: p, label: monthName(p), issue: d.issue, due: d.due,
-        charge: charge, charge_summary: describeBalance(charge, names),
-        applied: applied, paid_amount: round2(Math.abs(applied)),
-        carry_in: round2(carryIn), carried_forward: cls.carry,
-        remaining: cls.remaining, remaining_summary: describeBalance(cls.remaining, names),
-        amount_due: cls.remaining, status: cls.status,
-      };
+      return { period: p, charge: charge, applied: applied, base: round2(charge + applied) };
     });
-    return { chain: chain, final_carry: round2(carry) };
-  }
 
-  /**
-   * The billing ledger (newest first) with per-statement status, plus any
-   * unapplied payments/credits, a standing credit balance (overpayment beyond the
-   * newest statement), and the overall outstanding.
-   */
-  function statementLedger(expenses, payments, adjustments, names, today) {
-    adjustments = adjustments || [];
-    var res = statementChain(expenses, payments, adjustments, names, today);
-    var statements = res.chain.slice().reverse();
-    var unapplied = 0, i;
+    // Unapplied payments/adjustments (not tied to any statement).
+    var unapplied = 0;
     for (i = 0; i < payments.length; i++) if (!payments[i].statement_period) unapplied += paymentDelta(payments[i]);
     for (i = 0; i < adjustments.length; i++) if (!adjustments[i].statement_period) unapplied += adjustmentDelta(adjustments[i]);
     unapplied = round2(unapplied);
-    var totalOutstanding = round2(statements.reduce(function (t, s) { return t + s.remaining; }, 0) + res.final_carry + unapplied);
+
+    // Credit pool = every negative amount (credit-source statements + negative unapplied).
+    var creditPool = 0;
+    for (i = 0; i < rows.length; i++) if (rows[i].base < 0) creditPool += -rows[i].base;
+    if (unapplied < 0) creditPool += -unapplied;
+    var creditRemaining = round2(creditPool);
+
+    // Pass 2: apply the pooled credit to positive statements, oldest first.
+    var chain = rows.map(function (r) {
+      var d = statementDates(r.period);
+      var creditApplied = 0, creditProvided = 0, remaining = 0, status;
+      if (r.base > 0.005) {
+        creditApplied = round2(Math.min(r.base, creditRemaining));
+        creditRemaining = round2(creditRemaining - creditApplied);
+        remaining = round2(r.base - creditApplied);
+        if (remaining < 0.005) status = (creditApplied > 0.005) ? 'settled' : 'paid';
+        else status = (today && today > d.due) ? 'overdue' : 'open';
+      } else if (r.base < -0.005) {
+        creditProvided = round2(-r.base); remaining = 0; status = 'settled';
+      } else { remaining = 0; status = 'paid'; }
+      return {
+        period: r.period, label: monthName(r.period), issue: d.issue, due: d.due,
+        charge: r.charge, charge_summary: describeBalance(r.charge, names),
+        applied: r.applied, paid_amount: round2(Math.abs(r.applied)),
+        base: r.base, credit_applied: creditApplied, credit_provided: creditProvided,
+        remaining: remaining, remaining_summary: describeBalance(remaining, names),
+        amount_due: remaining, status: status,
+      };
+    });
+
+    // Any credit left after covering all statements offsets a positive unapplied
+    // balance, then remains as a standing credit for the payer.
+    if (unapplied > 0) { var used = Math.min(unapplied, creditRemaining); creditRemaining = round2(creditRemaining - used); }
+    var standingCredit = round2(-creditRemaining); // negative => the payer holds a credit
+
+    var acct = accountTotals(expenses, payments, adjustments, names);
     return {
-      statements: statements,
-      unapplied: unapplied,
-      credit_carry: res.final_carry,
-      open_count: statements.filter(function (s) { return s.status === 'open'; }).length,
-      overdue_count: statements.filter(function (s) { return s.status === 'overdue'; }).length,
-      settled_count: statements.filter(function (s) { return s.status === 'settled'; }).length,
-      total_outstanding: totalOutstanding,
-      total_summary: describeBalance(totalOutstanding, names),
+      statements: chain.slice().reverse(), chain: chain,
+      unapplied: unapplied, credit_carry: standingCredit,
+      account: acct, running_balance: acct.balance, running_summary: acct.summary,
+      open_count: chain.filter(function (s) { return s.status === 'open'; }).length,
+      overdue_count: chain.filter(function (s) { return s.status === 'overdue'; }).length,
+      settled_count: chain.filter(function (s) { return s.status === 'settled'; }).length,
+      total_outstanding: acct.balance, total_summary: acct.summary,
     };
   }
 
@@ -271,21 +286,23 @@
     var netAdjustments = round2(appliedAdjustments.reduce(function (t, x) { return t + adjustmentDelta(x); }, 0));
     var d = statementDates(month);
 
-    // Fold in any credit carried from a prior overpayment (and any overpayment
-    // this statement carries onward) via the cascading chain.
-    var chain = statementChain(expenses, payments, adjustments, names, today, month).chain;
+    // Pull this month's row from the full ledger (which applies pooled credits to
+    // the oldest outstanding statement first) plus the account-wide running total.
+    var led = statementLedger(expenses, payments, adjustments, names, today, month);
     var entry = null;
-    for (var ci = 0; ci < chain.length; ci++) if (chain[ci].period === month) { entry = chain[ci]; break; }
-    var carryIn = entry ? entry.carry_in : 0;
-    var carriedForward = entry ? entry.carried_forward : 0;
-    var amountDue = entry ? entry.remaining : round2(charge + netPayments + netAdjustments + carryIn);
-    var status = entry ? entry.status : classifyStatement(round2(charge + netPayments + netAdjustments + carryIn), d.due, today).status;
+    for (var ci = 0; ci < led.chain.length; ci++) if (led.chain[ci].period === month) { entry = led.chain[ci]; break; }
+    var creditApplied = entry ? entry.credit_applied : 0;      // pooled credit reducing THIS statement
+    var creditProvided = entry ? entry.credit_provided : 0;    // this month's own credit (if negative)
+    var amountDue = entry ? entry.remaining : 0;
+    var status = entry ? entry.status : 'paid';
 
     return {
       month: month, names: names,
       issue: d.issue, due: d.due,
       status: status,
-      carry_in: round2(carryIn), carried_forward: round2(carriedForward),
+      credit_applied: round2(creditApplied), credit_provided: round2(creditProvided),
+      account: led.account, running_summary: led.running_summary,
+      aging: led.statements, unapplied: led.unapplied, credit_carry: led.credit_carry,
       totals: {
         total_spent: round2(paidByA + paidByB),
         paid_by_a: round2(paidByA), paid_by_b: round2(paidByB),
@@ -316,9 +333,8 @@
     expenseDelta: expenseDelta, paymentDelta: paymentDelta, adjustmentDelta: adjustmentDelta,
     computeBalance: computeBalance, describeBalance: describeBalance,
     summarizeByChild: summarizeByChild, summarizeByCategory: summarizeByCategory,
-    statementDates: statementDates, classifyStatement: classifyStatement,
-    statementChain: statementChain, statementLedger: statementLedger,
-    buildStatement: buildStatement,
+    statementDates: statementDates, accountTotals: accountTotals,
+    statementLedger: statementLedger, buildStatement: buildStatement,
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = Finance;
